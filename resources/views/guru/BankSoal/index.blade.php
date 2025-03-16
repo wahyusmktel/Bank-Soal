@@ -6,10 +6,10 @@
     <h4 class="py-4 mb-6">Bank Soal</h4>
 
     <!-- Notifikasi -->
-    @if(session('success'))
+    @if (session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
-    @if(session('error'))
+    @if (session('error'))
         <div class="alert alert-danger">{{ session('error') }}</div>
     @endif
 
@@ -34,7 +34,8 @@
                 @forelse ($bankSoals as $index => $soal)
                     <tr>
                         <td>{{ ($bankSoals->currentPage() - 1) * $bankSoals->perPage() + $index + 1 }}</td>
-                        <td><a href="{{ asset('storage/' . $soal->file_soal) }}" target="_blank">{{ $soal->file_soal }}</a></td>
+                        <td><a href="{{ asset('storage/' . $soal->file_soal) }}" target="_blank">{{ $soal->file_soal }}</a>
+                        </td>
                         <td>
                             <span class="badge {{ $soal->status ? 'bg-success' : 'bg-danger' }}">
                                 {{ $soal->status ? 'Active' : 'Inactive' }}
@@ -46,14 +47,17 @@
                                     <i class="icon-base ti tabler-dots-vertical"></i>
                                 </button>
                                 <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="{{ asset('storage/' . $soal->file_soal) }}" target="_blank">
+                                    <a class="dropdown-item" href="{{ asset('storage/' . $soal->file_soal) }}"
+                                        target="_blank">
                                         <i class="icon-base ti tabler-eye me-1"></i> Lihat Soal
                                     </a>
-                                    <a class="dropdown-item edit-bank-soal" href="javascript:void(0);" 
-                                        data-id="{{ $soal->id }}" data-file="{{ $soal->file_soal }}" data-status="{{ $soal->status }}">
+                                    <a class="dropdown-item edit-bank-soal" href="javascript:void(0);"
+                                        data-id="{{ $soal->id }}" data-file="{{ $soal->file_soal }}"
+                                        data-status="{{ $soal->status }}">
                                         <i class="icon-base ti tabler-edit me-1"></i> Edit
                                     </a>
-                                    <form action="{{ route('guru.bank-soal.destroy', $soal->id) }}" method="POST" class="d-inline">
+                                    <form action="{{ route('guru.bank-soal.destroy', $soal->id) }}" method="POST"
+                                        class="d-inline">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="dropdown-item text-danger delete-bank-soal">
@@ -77,4 +81,32 @@
     <div class="d-flex justify-content-center mt-3">
         {{ $bankSoals->links('vendor.pagination.bootstrap-4') }}
     </div>
+
+    <!-- Modal Tambah Bank Soal -->
+    <div class="modal fade" id="addBankSoalModal" data-bs-backdrop="static" tabindex="-1"
+        aria-labelledby="addBankSoalModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addBankSoalModalLabel">Tambah Bank Soal</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ route('guru.bank-soal.store') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Upload File Soal</label>
+                            <input type="file" class="form-control" name="file_soal" required>
+                            <small class="text-muted">Format file: PDF, DOC, DOCX (Max: 2MB)</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 @endsection

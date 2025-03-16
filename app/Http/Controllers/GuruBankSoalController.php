@@ -26,4 +26,33 @@ class GuruBankSoalController extends Controller
             return back()->with('error', 'Terjadi kesalahan saat memuat data.');
         }
     }
+
+    public function store(Request $request)
+    {
+        try {
+            // Validasi input
+            $request->validate([
+                'file_soal' => 'required|file|mimes:pdf,doc,docx|max:2048',
+            ]);
+
+            // Ambil ID guru yang sedang login
+            $guruId = Auth::guard('guru')->user()->guru_id;
+
+            // Simpan file soal ke storage
+            $filePath = $request->file('file_soal')->store('bank-soal', 'public');
+
+            // Simpan data ke database
+            BankSoal::create([
+                'id' => \Illuminate\Support\Str::uuid(),
+                'guru_id' => $guruId,
+                'file_soal' => $filePath,
+                'status' => true, // Otomatis aktif
+            ]);
+
+            return redirect()->route('guru.bank-soal.index')->with('success', 'Bank Soal berhasil ditambahkan!');
+        } catch (\Exception $e) {
+            Log::error('Error saat menambahkan Bank Soal: ' . $e->getMessage());
+            return back()->with('error', 'Terjadi kesalahan saat menambahkan Bank Soal.');
+        }
+    }
 }

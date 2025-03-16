@@ -63,5 +63,6 @@ Route::prefix('guru')->name('guru.')->group(function () {
     Route::middleware(['auth.guru'])->group(function () {
         Route::get('/dashboard', [GuruDashboardController::class, 'index'])->name('dashboard');
         Route::get('/bank-soal', [GuruBankSoalController::class, 'index'])->name('bank-soal.index');
+        Route::post('/bank-soal', [GuruBankSoalController::class, 'store'])->name('bank-soal.store');
     });
 });
