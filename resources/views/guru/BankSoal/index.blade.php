@@ -25,6 +25,8 @@
             <thead class="table-dark">
                 <tr>
                     <th>No</th>
+                    <th>Mata Pelajaran</th>
+                    <th>Kelas</th>
                     <th>File Soal</th>
                     <th>Status</th>
                     <th>Aksi</th>
@@ -32,9 +34,34 @@
             </thead>
             <tbody>
                 @forelse ($bankSoals as $index => $soal)
+                    @php
+                        // Decode JSON mata_pelajaran_id
+                        $mapelKelasData = json_decode($soal->mata_pelajaran_id, true);
+
+                        // Pastikan data berbentuk array valid
+                        if (!is_array($mapelKelasData)) {
+                            $mapelKelasData = [];
+                        }
+
+                        // Ambil ID mata pelajaran dan kelas dari JSON
+                        $mapelId = $mapelKelasData['mata_pelajaran_id'] ?? null; // Mata pelajaran hanya satu ID
+                        $kelasIds = $mapelKelasData['kelas_id'] ?? []; // Kelas bisa lebih dari satu (array)
+
+                        // Ambil nama mata pelajaran berdasarkan ID
+                        $mapelNama = \App\Models\MataPelajaran::where('id', $mapelId)->value('nama_mapel');
+
+                        // Ambil nama kelas berdasarkan kelas_id yang dipilih
+                        $kelasList = \App\Models\Kelas::whereIn('id', $kelasIds)->pluck('nama_kelas')->toArray();
+                    @endphp
                     <tr>
                         <td>{{ ($bankSoals->currentPage() - 1) * $bankSoals->perPage() + $index + 1 }}</td>
-                        <td><a href="{{ asset('storage/' . $soal->file_soal) }}" target="_blank">{{ $soal->file_soal }}</a>
+                        <td>{{ $mapelNama ?? 'Unknown Mapel' }}</td> <!-- Menampilkan nama mata pelajaran -->
+                        <td>{{ !empty($kelasList) ? implode(', ', $kelasList) : 'Tidak ada kelas' }}</td>
+                        <!-- Menampilkan daftar kelas -->
+                        <td>
+                            <a href="{{ asset('storage/' . $soal->file_soal) }}" target="_blank">
+                                {{ basename($soal->file_soal) }}
+                            </a>
                         </td>
                         <td>
                             <span class="badge {{ $soal->status ? 'bg-success' : 'bg-danger' }}">
@@ -56,25 +83,27 @@
                                         data-status="{{ $soal->status }}">
                                         <i class="icon-base ti tabler-edit me-1"></i> Edit
                                     </a>
-                                    <form action="{{ route('guru.bank-soal.destroy', $soal->id) }}" method="POST"
-                                        class="d-inline">
+                                    {{-- <form action="{{ route('guru.bank-soal.destroy', $soal->id) }}" method="POST"
+                                        class="d-inline"
+                                        onsubmit="return confirm('Apakah Anda yakin ingin menghapus soal ini?');">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="dropdown-item text-danger delete-bank-soal">
                                             <i class="icon-base ti tabler-trash me-1"></i> Hapus
                                         </button>
-                                    </form>
+                                    </form> --}}
                                 </div>
                             </div>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="text-center">Tidak ada bank soal.</td>
+                        <td colspan="6" class="text-center">Tidak ada bank soal.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
+
     </div>
 
     <!-- Pagination -->
@@ -94,12 +123,39 @@
                 <form action="{{ route('guru.bank-soal.store') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="modal-body">
+                        <!-- Pilihan Mata Pelajaran -->
+                        <div class="mb-3">
+                            <label class="form-label">Pilih Mata Pelajaran</label>
+                            <select class="form-control" name="mata_pelajaran_id" required>
+                                <option value="">-- Pilih Mata Pelajaran --</option>
+                                @foreach ($mapingMapels as $maping)
+                                    @foreach ($maping->mapel_kelas_list as $data)
+                                        <option value="{{ $data['mata_pelajaran_id'] }}">{{ $data['mapel'] }}</option>
+                                    @endforeach
+                                @endforeach
+                            </select>
+
+                        </div>
+
+                        <!-- Pilihan Kelas (Multiple Select) -->
+                        <div class="mb-3">
+                            <label class="form-label">Pilih Kelas</label>
+                            <select class="form-control select2" name="kelas_id[]" multiple="multiple" required>
+                                @foreach ($kelas as $item)
+                                    <option value="{{ $item->id }}">{{ $item->nama_kelas }}</option>
+                                @endforeach
+                            </select>
+                            <small class="text-muted">Bisa memilih lebih dari satu kelas</small>
+                        </div>
+
+                        <!-- Upload File Soal -->
                         <div class="mb-3">
                             <label class="form-label">Upload File Soal</label>
-                            <input type="file" class="form-control" name="file_soal" required>
-                            <small class="text-muted">Format file: PDF, DOC, DOCX (Max: 2MB)</small>
+                            <input type="file" class="form-control" name="file_soal" accept=".zip" required>
+                            <small class="text-muted">Format file: .zip (Max: 5MB)</small>
                         </div>
                     </div>
+
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                         <button type="submit" class="btn btn-primary">Simpan</button>
@@ -108,5 +164,6 @@
             </div>
         </div>
     </div>
+
 
 @endsection
