@@ -10,6 +10,7 @@ use App\Http\Controllers\AdminMapingController;
 use App\Http\Controllers\AdminKelasController;
 use App\Http\Controllers\GuruAuthController;
 use App\Http\Controllers\GuruDashboardController;
+use App\Http\Controllers\GuruBankSoalController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -61,5 +62,6 @@ Route::prefix('guru')->name('guru.')->group(function () {
 
     Route::middleware(['auth.guru'])->group(function () {
         Route::get('/dashboard', [GuruDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/bank-soal', [GuruBankSoalController::class, 'index'])->name('bank-soal.index');
     });
 });
