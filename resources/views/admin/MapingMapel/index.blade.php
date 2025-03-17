@@ -312,30 +312,42 @@
                 newRow.classList.add("d-flex", "mb-2");
 
                 let mapelSelect = `
-            <select class="form-control mapel-select" name="mata_pelajaran_id[]" required>
-                <option value="">-- Pilih Mata Pelajaran --</option>
-                @foreach ($mataPelajarans as $mapel)
-                    <option value="{{ $mapel->id }}" ${selectedMapel === '{{ $mapel->id }}' ? 'selected' : ''}>
-                        {{ $mapel->nama_mapel }}
-                    </option>
-                @endforeach
-            </select>
-        `;
+    <select class="form-control mapel-select" name="mata_pelajaran_id[]" required>
+        <option value="">-- Pilih Mata Pelajaran --</option>
+        @foreach ($mataPelajarans as $mapel)
+            <option value="{{ $mapel->id }}" ${selectedMapel === '{{ $mapel->id }}' ? 'selected' : ''}>
+                {{ $mapel->nama_mapel }}
+            </option>
+        @endforeach
+    </select>
+    `;
 
                 let kelasSelect = `
-            <select class="form-control kelas-select ms-2" name="kelas_id[${selectedMapel}][]" multiple required>
-                <option value="">-- Pilih Kelas --</option>
-                @foreach ($kelasuuu as $item)
-                    <option value="{{ $item->id }}" ${selectedKelas.includes('{{ $item->id }}') ? 'selected' : ''}>
-                        {{ $item->nama_kelas }}
-                    </option>
-                @endforeach
-            </select>
-        `;
+    <select class="form-control kelas-select ms-2" name="kelas_id[${selectedMapel || 'temp'}][]" multiple required>
+        <option value="">-- Pilih Kelas --</option>
+        @foreach ($kelasuuu as $item)
+            <option value="{{ $item->id }}" ${selectedKelas.includes('{{ $item->id }}') ? 'selected' : ''}>
+                {{ $item->nama_kelas }}
+            </option>
+        @endforeach
+    </select>
+    `;
 
                 newRow.innerHTML = mapelSelect + kelasSelect + `
-            <button type="button" class="btn btn-danger ms-2 remove-mapping">X</button>
-        `;
+    <button type="button" class="btn btn-danger ms-2 remove-mapping">X</button>
+    `;
+
+                // Event: Saat Mata Pelajaran Dipilih, Update `name` di Kelas
+                let mapelDropdown = newRow.querySelector(".mapel-select");
+                let kelasDropdown = newRow.querySelector(".kelas-select");
+
+                mapelDropdown.addEventListener("change", function() {
+                    let selectedValue = this.value;
+                    if (selectedValue) {
+                        kelasDropdown.name =
+                            `kelas_id[${selectedValue}][]`; // Update name sesuai mata_pelajaran_id
+                    }
+                });
 
                 newRow.querySelector(".remove-mapping").addEventListener("click", function() {
                     newRow.remove();
@@ -343,6 +355,8 @@
 
                 return newRow;
             }
+
+
         });
 
         document.querySelectorAll(".delete-mapping").forEach(function(button) {

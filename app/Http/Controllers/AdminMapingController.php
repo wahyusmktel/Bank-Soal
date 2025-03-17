@@ -245,31 +245,37 @@ class AdminMapingController extends Controller
                 'kelas_id' => $request->kelas_id,
             ]);
 
-            // **Perbaikan: Gunakan `mata_pelajaran_id` sebagai key untuk mengambil kelas**
+            // **Gabungkan kelas ke dalam satu array per mata pelajaran**
             $mapelKelasData = [];
 
             foreach ($request->mata_pelajaran_id as $mapelId) {
-                // Gunakan mata_pelajaran_id sebagai key untuk mengambil kelas yang benar
-                $kelasIds = isset($request->kelas_id[$mapelId]) ? $request->kelas_id[$mapelId] : [];
-
-                // Pastikan hanya UUID yang valid
-                $kelasIds = array_filter($kelasIds, function ($kelasId) {
-                    return is_string($kelasId) && Str::isUuid($kelasId);
-                });
-
-                $mapelKelasData[] = [
-                    'mata_pelajaran_id' => $mapelId,
-                    'kelas_id' => array_values($kelasIds), // Simpan sebagai array yang rapi
-                ];
+                if (isset($request->kelas_id[$mapelId])) {
+                    // Jika mata pelajaran sudah ada, tambahkan kelas baru ke array yang sudah ada
+                    if (isset($mapelKelasData[$mapelId])) {
+                        $mapelKelasData[$mapelId]['kelas_id'] = array_unique(array_merge(
+                            $mapelKelasData[$mapelId]['kelas_id'],
+                            $request->kelas_id[$mapelId]
+                        ));
+                    } else {
+                        // Jika belum ada, buat entri baru
+                        $mapelKelasData[$mapelId] = [
+                            'mata_pelajaran_id' => $mapelId,
+                            'kelas_id' => $request->kelas_id[$mapelId]
+                        ];
+                    }
+                }
             }
 
-            Log::info('Format JSON sebelum update:', ['mapel_kelas_data' => $mapelKelasData]);
+            // Konversi ke format JSON yang benar
+            $mapelKelasFormatted = array_values($mapelKelasData);
+
+            Log::info('Format JSON sebelum update:', ['mapel_kelas_data' => $mapelKelasFormatted]);
 
             // **Update data mapping**
             $maping->update([
                 'guru_id' => $request->guru_id,
                 'data_ujian_id' => $request->data_ujian_id,
-                'mata_pelajaran_id' => json_encode($mapelKelasData),
+                'mata_pelajaran_id' => json_encode($mapelKelasFormatted),
                 'status' => $request->status,
             ]);
 
@@ -281,6 +287,7 @@ class AdminMapingController extends Controller
             return back()->with('error', 'Terjadi kesalahan saat memperbarui data.');
         }
     }
+
 
 
 
