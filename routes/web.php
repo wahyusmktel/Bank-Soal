@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminAuthController;
+use App\Http\Controllers\AdminBankSoalController;
 use App\Http\Controllers\AdminGuruController;
 use App\Http\Controllers\AdminMataPelajaranController;
 use App\Http\Controllers\AdminTahunPelajaranController;
@@ -19,6 +20,7 @@ Route::get('/', function () {
 Route::prefix('admin')->group(function () {
     Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
     Route::post('/login', [AdminAuthController::class, 'login']);
+    Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
     Route::get('/register', [AdminAuthController::class, 'showRegisterForm'])->name('admin.register');
     Route::post('/register', [AdminAuthController::class, 'register']);
 
@@ -51,6 +53,10 @@ Route::prefix('admin')->group(function () {
         Route::get('/kelas', [AdminKelasController::class, 'index'])->name('admin.kelas.index');
         Route::post('/kelas/store', [AdminKelasController::class, 'store'])->name('admin.kelas.store');
 
+        Route::get('/bank-soal', [AdminBankSoalController::class, 'index'])->name('admin.bank-soal.index');
+        Route::get('/bank-soal/lihat-zip/{id}', [AdminBankSoalController::class, 'lihatZip'])->name('admin.bank-soal.lihat-zip');
+
+
         Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
     });
 });
@@ -64,5 +70,6 @@ Route::prefix('guru')->name('guru.')->group(function () {
         Route::get('/dashboard', [GuruDashboardController::class, 'index'])->name('dashboard');
         Route::get('/bank-soal', [GuruBankSoalController::class, 'index'])->name('bank-soal.index');
         Route::post('/bank-soal', [GuruBankSoalController::class, 'store'])->name('bank-soal.store');
+        Route::get('/bank-soal/lihat-zip/{id}', [GuruBankSoalController::class, 'lihatZip']);
     });
 });

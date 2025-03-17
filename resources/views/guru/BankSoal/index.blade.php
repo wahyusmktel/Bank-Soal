@@ -58,8 +58,14 @@
                         <td>{{ $mapelNama ?? 'Unknown Mapel' }}</td> <!-- Menampilkan nama mata pelajaran -->
                         <td>{{ !empty($kelasList) ? implode(', ', $kelasList) : 'Tidak ada kelas' }}</td>
                         <!-- Menampilkan daftar kelas -->
-                        <td>
+                        {{-- <td>
                             <a href="{{ asset('storage/' . $soal->file_soal) }}" target="_blank">
+                                {{ basename($soal->file_soal) }}
+                            </a>
+                        </td> --}}
+                        <td>
+                            <a href="javascript:void(0);" class="open-zip-modal"
+                                data-file="{{ asset('storage/' . $soal->file_soal) }}" data-id="{{ $soal->id }}">
                                 {{ basename($soal->file_soal) }}
                             </a>
                         </td>
@@ -165,5 +171,75 @@
         </div>
     </div>
 
+    <!-- Modal untuk menampilkan isi ZIP dalam struktur folder -->
+    <div class="modal fade" id="zipContentModal" tabindex="-1" aria-labelledby="zipContentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="zipContentModalLabel">Isi File ZIP</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul id="zipFileTree" class="list-group"></ul>
+                    <!-- Tempat menampilkan daftar file sebagai struktur folder -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            document.querySelectorAll(".open-zip-modal").forEach(function(element) {
+                element.addEventListener("click", function() {
+                    let soalId = this.getAttribute("data-id");
+
+                    // Kirim permintaan AJAX ke server untuk mendapatkan isi ZIP dalam struktur folder
+                    fetch(`/guru/bank-soal/lihat-zip/${soalId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            let fileTreeContainer = document.getElementById("zipFileTree");
+                            fileTreeContainer.innerHTML = ""; // Bersihkan isi sebelumnya
+
+                            if (data.success) {
+                                fileTreeContainer.appendChild(buildFileTree(data.fileTree));
+                            } else {
+                                fileTreeContainer.innerHTML =
+                                    "<li class='list-group-item'>Gagal membaca file ZIP.</li>";
+                            }
+
+                            // Tampilkan modal
+                            new bootstrap.Modal(document.getElementById("zipContentModal"))
+                                .show();
+                        })
+                        .catch(error => {
+                            console.error("Error:", error);
+                        });
+                });
+            });
+
+            // Fungsi untuk membuat struktur folder
+            function buildFileTree(tree, isSub = false) {
+                let ul = document.createElement("ul");
+                ul.classList.add("list-group", "ms-3");
+
+                for (let key in tree) {
+                    let li = document.createElement("li");
+                    li.classList.add("list-group-item");
+
+                    if (Object.keys(tree[key]).length > 0) {
+                        li.innerHTML = `<i class="icon-base ti tabler-folder me-1"></i> <strong>${key}</strong>`;
+                        let subUl = buildFileTree(tree[key], true);
+                        li.appendChild(subUl);
+                    } else {
+                        li.innerHTML = `<i class="icon-base ti tabler-file me-1"></i> ${key}`;
+                    }
+
+                    ul.appendChild(li);
+                }
+
+                return ul;
+            }
+        });
+    </script>
 
 @endsection

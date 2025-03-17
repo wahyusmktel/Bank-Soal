@@ -31,9 +31,12 @@ class GuruAuthController extends Controller
     }
 
     // Logout guru
-    public function logout()
+    public function logout(Request $request)
     {
         Auth::guard('guru')->logout();
-        return redirect()->route('guru.login')->with('success', 'Logout berhasil.');
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('guru.login')->with('success', 'Anda berhasil logout.');
     }
 }

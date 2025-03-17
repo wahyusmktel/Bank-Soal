@@ -27,7 +27,11 @@
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
                     <li>
-                        <a class="dropdown-item" href="#">
+                        <form id="logout-form" action="{{ route('guru.logout') }}" method="POST" class="d-none">
+                            @csrf
+                        </form>
+                        <a class="dropdown-item" href="#"
+                            onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                             <i class="icon-base ti tabler-power icon-md me-3"></i><span>Log Out</span>
                         </a>
                     </li>

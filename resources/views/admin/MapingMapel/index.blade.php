@@ -180,7 +180,7 @@
                                             <option value="{{ $mapel->id }}">{{ $mapel->nama_mapel }}</option>
                                         @endforeach
                                     </select>
-                                    <select class="form-control kelas-select ms-2" name="kelas_id[]" required>
+                                    <select class="form-control kelas-select ms-2" name="kelas_id[0][]" multiple required>
                                         <option value="">-- Pilih Kelas --</option>
                                         @foreach ($kelasuuu as $item)
                                             <option value="{{ $item->id }}">{{ $item->nama_kelas }}</option>
@@ -269,53 +269,14 @@
         document.addEventListener("DOMContentLoaded", function() {
             document.getElementById("addMapping").addEventListener("click", function() {
                 let container = document.getElementById("mapelKelasContainer");
-                let newRow = document.createElement("div");
-                newRow.classList.add("d-flex", "mb-2");
-
-                newRow.innerHTML = `
-            <select class="form-control mapel-select" name="mata_pelajaran_id[]" required>
-                <option value="">-- Pilih Mata Pelajaran --</option>
-                @foreach ($mataPelajarans as $mapel)
-                    <option value="{{ $mapel->id }}">{{ $mapel->nama_mapel }}</option>
-                @endforeach
-            </select>
-
-            <select class="form-control kelas-select ms-2" name="kelas_id[]" required>
-                <option value="">-- Pilih Kelas --</option>
-                @foreach ($kelasuuu as $item)
-                    <option value="{{ $item->id }}">{{ $item->nama_kelas }}</option>
-                @endforeach
-            </select>
-
-            <button type="button" class="btn btn-danger ms-2 remove-mapping">X</button>
-        `;
-
-                container.appendChild(newRow);
-            });
-
-            document.addEventListener("click", function(event) {
-                if (event.target.classList.contains("remove-mapping")) {
-                    event.target.parentElement.remove();
-                }
-            });
-        });
-    </script>
-
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            // Fungsi menambahkan mapel & kelas di modal tambah
-            document.getElementById("addMapping").addEventListener("click", function() {
-                let container = document.getElementById("mapelKelasContainer");
                 container.appendChild(createMapelKelasRow());
             });
 
-            // Fungsi menambahkan mapel & kelas di modal edit
             document.getElementById("addMappingEdit").addEventListener("click", function() {
                 let container = document.getElementById("editMapelKelasContainer");
                 container.appendChild(createMapelKelasRow());
             });
 
-            // Event listener untuk tombol "Edit"
             document.querySelectorAll(".edit-mapping").forEach(function(button) {
                 button.addEventListener("click", function() {
                     let mappingId = this.getAttribute("data-id");
@@ -344,41 +305,37 @@
                 });
             });
 
-            // Konfirmasi Hapus
-            document.querySelectorAll(".delete-mapping").forEach(function(button) {
-                button.addEventListener("click", function(event) {
-                    if (!confirm("Apakah Anda yakin ingin menghapus mapping ini?")) {
-                        event.preventDefault();
-                    }
-                });
-            });
 
-            // Fungsi membuat elemen Mapel & Kelas
-            function createMapelKelasRow(selectedMapel = "", selectedKelas = "") {
+
+            function createMapelKelasRow(selectedMapel = "", selectedKelas = []) {
                 let newRow = document.createElement("div");
                 newRow.classList.add("d-flex", "mb-2");
 
-                newRow.innerHTML = `
-                <select class="form-control mapel-select" name="mata_pelajaran_id[]" required>
-                    <option value="">-- Pilih Mata Pelajaran --</option>
-                    @foreach ($mataPelajarans as $mapel)
-                        <option value="{{ $mapel->id }}" ${selectedMapel === '{{ $mapel->id }}' ? 'selected' : ''}>
-                            {{ $mapel->nama_mapel }}
-                        </option>
-                    @endforeach
-                </select>
+                let mapelSelect = `
+            <select class="form-control mapel-select" name="mata_pelajaran_id[]" required>
+                <option value="">-- Pilih Mata Pelajaran --</option>
+                @foreach ($mataPelajarans as $mapel)
+                    <option value="{{ $mapel->id }}" ${selectedMapel === '{{ $mapel->id }}' ? 'selected' : ''}>
+                        {{ $mapel->nama_mapel }}
+                    </option>
+                @endforeach
+            </select>
+        `;
 
-                <select class="form-control kelas-select ms-2" name="kelas_id[]" required>
-                    <option value="">-- Pilih Kelas --</option>
-                    @foreach ($kelasuuu as $item)
-                        <option value="{{ $item->id }}" ${selectedKelas === '{{ $item->id }}' ? 'selected' : ''}>
-                            {{ $item->nama_kelas }}
-                        </option>
-                    @endforeach
-                </select>
+                let kelasSelect = `
+            <select class="form-control kelas-select ms-2" name="kelas_id[${selectedMapel}][]" multiple required>
+                <option value="">-- Pilih Kelas --</option>
+                @foreach ($kelasuuu as $item)
+                    <option value="{{ $item->id }}" ${selectedKelas.includes('{{ $item->id }}') ? 'selected' : ''}>
+                        {{ $item->nama_kelas }}
+                    </option>
+                @endforeach
+            </select>
+        `;
 
-                <button type="button" class="btn btn-danger ms-2 remove-mapping">X</button>
-            `;
+                newRow.innerHTML = mapelSelect + kelasSelect + `
+            <button type="button" class="btn btn-danger ms-2 remove-mapping">X</button>
+        `;
 
                 newRow.querySelector(".remove-mapping").addEventListener("click", function() {
                     newRow.remove();
@@ -386,6 +343,14 @@
 
                 return newRow;
             }
+        });
+
+        document.querySelectorAll(".delete-mapping").forEach(function(button) {
+            button.addEventListener("click", function(event) {
+                if (!confirm("Apakah Anda yakin ingin menghapus mapping ini?")) {
+                    event.preventDefault();
+                }
+            });
         });
     </script>
 

@@ -10,6 +10,8 @@ use App\Models\Kelas;
 use App\Models\MapingMapel;
 use App\Models\MataPelajaran;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use ZipArchive;
 
 class GuruBankSoalController extends Controller
 {
@@ -159,5 +161,58 @@ class GuruBankSoalController extends Controller
             Log::error('Error saat menambahkan Bank Soal: ' . $e->getMessage());
             return back()->with('error', 'Terjadi kesalahan saat menambahkan Bank Soal.');
         }
+    }
+
+    public function lihatZip($id)
+    {
+        try {
+            $bankSoal = BankSoal::findOrFail($id);
+            $zipPath = storage_path('app/public/' . $bankSoal->file_soal);
+
+            if (!file_exists($zipPath)) {
+                return response()->json(['success' => false, 'message' => 'File tidak ditemukan']);
+            }
+
+            $zip = new ZipArchive;
+            if ($zip->open($zipPath) === TRUE) {
+                $files = [];
+                for ($i = 0; $i < $zip->numFiles; $i++) {
+                    $fileName = $zip->getNameIndex($i);
+                    $files[] = $fileName;
+                }
+                $zip->close();
+
+                // Convert file list ke tree structure
+                $fileTree = $this->buildFileTree($files);
+
+                return response()->json(['success' => true, 'fileTree' => $fileTree]);
+            } else {
+                return response()->json(['success' => false, 'message' => 'Gagal membuka file ZIP']);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan saat membaca ZIP']);
+        }
+    }
+
+    /**
+     * Konversi daftar file ke struktur folder
+     */
+    private function buildFileTree($files)
+    {
+        $tree = [];
+
+        foreach ($files as $file) {
+            $parts = explode('/', $file);
+            $current = &$tree;
+
+            foreach ($parts as $part) {
+                if (!isset($current[$part])) {
+                    $current[$part] = [];
+                }
+                $current = &$current[$part];
+            }
+        }
+
+        return $tree;
     }
 }

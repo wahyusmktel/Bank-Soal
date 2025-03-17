@@ -59,7 +59,7 @@ class AdminMapingController extends Controller
 
                 // Ambil ID mata pelajaran dan kelas
                 $mapelIds = collect($mapelKelasData)->pluck('mata_pelajaran_id')->toArray();
-                $kelasIds = collect($mapelKelasData)->pluck('kelas_id')->toArray();
+                $kelasIds = collect($mapelKelasData)->pluck('kelas_id')->flatten()->toArray();
 
                 // Ambil data nama mapel dan kelas dari database
                 $mapels = MataPelajaran::whereIn('id', $mapelIds)->pluck('nama_mapel', 'id')->toArray();
@@ -69,7 +69,15 @@ class AdminMapingController extends Controller
                 $mapelKelasList = [];
                 foreach ($mapelKelasData as $index => $data) {
                     $mapelNama = $mapels[$data['mata_pelajaran_id']] ?? 'Unknown Mapel';
-                    $kelasNama = $kelas[$data['kelas_id']] ?? 'Unknown Kelas';
+
+                    // Jika `kelas_id` adalah array, kita harus mengonversinya ke string daftar nama kelas
+                    $kelasIds = is_array($data['kelas_id']) ? $data['kelas_id'] : [$data['kelas_id']];
+                    $kelasNamaList = collect($kelasIds)->map(fn($id) => $kelas[$id] ?? 'Unknown Kelas')->toArray();
+
+                    // Gabungkan semua nama kelas dengan koma
+                    $kelasNama = implode(', ', $kelasNamaList);
+
+                    // Format daftar mapel dan kelas
                     $mapelKelasList[] = ($index + 1) . ". $mapelNama - $kelasNama";
                 }
 
@@ -105,6 +113,8 @@ class AdminMapingController extends Controller
     public function store(Request $request)
     {
         try {
+            Log::info('Data yang dikirim oleh user:', $request->all());
+
             // Validasi input
             $request->validate([
                 'guru_id' => 'required|uuid|exists:gurus,id',
@@ -112,20 +122,32 @@ class AdminMapingController extends Controller
                 'mata_pelajaran_id' => 'required|array|min:1',
                 'mata_pelajaran_id.*' => 'uuid|exists:mata_pelajarans,id',
                 'kelas_id' => 'required|array|min:1',
-                'kelas_id.*' => 'uuid|exists:kelas,id',
+                'kelas_id.*' => 'array|min:1', // Kelas harus berupa array
+                'kelas_id.*.*' => 'uuid|exists:kelas,id', // Setiap item dalam array harus UUID
             ]);
 
-            // Format data JSON (Mapel + Kelas)
+            Log::info('Data setelah validasi:', [
+                'guru_id' => $request->guru_id,
+                'data_ujian_id' => $request->data_ujian_id,
+                'mata_pelajaran_id' => $request->mata_pelajaran_id,
+                'kelas_id' => $request->kelas_id,
+            ]);
+
+            // **Format data JSON (Mapel + Kelas)**
             $mapelKelasData = [];
             foreach ($request->mata_pelajaran_id as $index => $mapelId) {
+                $kelasIds = isset($request->kelas_id[$index]) ? $request->kelas_id[$index] : [];
+
                 $mapelKelasData[] = [
                     'mata_pelajaran_id' => $mapelId,
-                    'kelas_id' => $request->kelas_id[$index]
+                    'kelas_id' => $kelasIds, // Menyimpan array kelas dalam JSON
                 ];
             }
 
-            // Simpan data
-            MapingMapel::create([
+            Log::info('Format JSON sebelum disimpan:', ['mapel_kelas_data' => $mapelKelasData]);
+
+            // **Simpan data ke database**
+            $maping = MapingMapel::create([
                 'id' => Str::uuid(),
                 'guru_id' => $request->guru_id,
                 'data_ujian_id' => $request->data_ujian_id,
@@ -133,12 +155,70 @@ class AdminMapingController extends Controller
                 'status' => true,
             ]);
 
+            Log::info('Mapping berhasil disimpan:', ['mapping_id' => $maping->id]);
+
             return redirect()->route('admin.maping.index')->with('success', 'Mapping Mata Pelajaran berhasil ditambahkan!');
         } catch (\Exception $e) {
             Log::error('Error saat menambahkan Mapping Mata Pelajaran: ' . $e->getMessage());
             return back()->with('error', 'Terjadi kesalahan saat menambahkan data.');
         }
     }
+
+
+    // public function update(Request $request, $id)
+    // {
+    //     try {
+    //         // Cari data berdasarkan ID
+    //         $maping = MapingMapel::findOrFail($id);
+
+    //         // Validasi input
+    //         $request->validate([
+    //             'guru_id' => 'required|uuid|exists:gurus,id',
+    //             'data_ujian_id' => 'required|uuid|exists:data_ujians,id',
+    //             'mata_pelajaran_id' => 'required|array|min:1',
+    //             'mata_pelajaran_id.*' => 'uuid|exists:mata_pelajarans,id',
+    //             'kelas_id' => 'required|array|min:1',
+    //             'kelas_id.*' => 'array|min:1',
+    //             'kelas_id.*.*' => 'uuid|exists:kelas,id',
+    //             'status' => 'required|boolean',
+    //         ]);
+
+    //         Log::info('Data setelah validasi untuk update:', [
+    //             'guru_id' => $request->guru_id,
+    //             'data_ujian_id' => $request->data_ujian_id,
+    //             'mata_pelajaran_id' => $request->mata_pelajaran_id,
+    //             'kelas_id' => $request->kelas_id,
+    //         ]);
+
+    //         // **Format ulang data JSON (Mapel + Kelas)**
+    //         $mapelKelasData = [];
+    //         foreach ($request->mata_pelajaran_id as $index => $mapelId) {
+    //             $kelasIds = isset($request->kelas_id[$index]) ? $request->kelas_id[$index] : [];
+
+    //             $mapelKelasData[] = [
+    //                 'mata_pelajaran_id' => $mapelId,
+    //                 'kelas_id' => $kelasIds,
+    //             ];
+    //         }
+
+    //         Log::info('Format JSON sebelum update:', ['mapel_kelas_data' => $mapelKelasData]);
+
+    //         // **Update data mapping**
+    //         $maping->update([
+    //             'guru_id' => $request->guru_id,
+    //             'data_ujian_id' => $request->data_ujian_id,
+    //             'mata_pelajaran_id' => json_encode($mapelKelasData),
+    //             'status' => $request->status,
+    //         ]);
+
+    //         Log::info('Mapping berhasil diperbarui:', ['mapping_id' => $maping->id]);
+
+    //         return redirect()->route('admin.maping.index')->with('success', 'Mapping Mata Pelajaran berhasil diperbarui!');
+    //     } catch (\Exception $e) {
+    //         Log::error('Error saat memperbarui Mapping Mata Pelajaran: ' . $e->getMessage());
+    //         return back()->with('error', 'Terjadi kesalahan saat memperbarui data.');
+    //     }
+    // }
 
     public function update(Request $request, $id)
     {
@@ -153,26 +233,47 @@ class AdminMapingController extends Controller
                 'mata_pelajaran_id' => 'required|array|min:1',
                 'mata_pelajaran_id.*' => 'uuid|exists:mata_pelajarans,id',
                 'kelas_id' => 'required|array|min:1',
-                'kelas_id.*' => 'uuid|exists:kelas,id',
+                'kelas_id.*' => 'array|min:1',
+                'kelas_id.*.*' => 'uuid|exists:kelas,id',
                 'status' => 'required|boolean',
             ]);
 
-            // Format ulang data JSON (Mapel + Kelas)
+            Log::info('Data setelah validasi untuk update:', [
+                'guru_id' => $request->guru_id,
+                'data_ujian_id' => $request->data_ujian_id,
+                'mata_pelajaran_id' => $request->mata_pelajaran_id,
+                'kelas_id' => $request->kelas_id,
+            ]);
+
+            // **Perbaikan: Gunakan `mata_pelajaran_id` sebagai key untuk mengambil kelas**
             $mapelKelasData = [];
-            foreach ($request->mata_pelajaran_id as $index => $mapelId) {
+
+            foreach ($request->mata_pelajaran_id as $mapelId) {
+                // Gunakan mata_pelajaran_id sebagai key untuk mengambil kelas yang benar
+                $kelasIds = isset($request->kelas_id[$mapelId]) ? $request->kelas_id[$mapelId] : [];
+
+                // Pastikan hanya UUID yang valid
+                $kelasIds = array_filter($kelasIds, function ($kelasId) {
+                    return is_string($kelasId) && Str::isUuid($kelasId);
+                });
+
                 $mapelKelasData[] = [
                     'mata_pelajaran_id' => $mapelId,
-                    'kelas_id' => $request->kelas_id[$index]
+                    'kelas_id' => array_values($kelasIds), // Simpan sebagai array yang rapi
                 ];
             }
 
-            // Update data mapping
+            Log::info('Format JSON sebelum update:', ['mapel_kelas_data' => $mapelKelasData]);
+
+            // **Update data mapping**
             $maping->update([
                 'guru_id' => $request->guru_id,
                 'data_ujian_id' => $request->data_ujian_id,
-                'mata_pelajaran_id' => json_encode($mapelKelasData), // Simpan sebagai JSON
+                'mata_pelajaran_id' => json_encode($mapelKelasData),
                 'status' => $request->status,
             ]);
+
+            Log::info('Mapping berhasil diperbarui:', ['mapping_id' => $maping->id]);
 
             return redirect()->route('admin.maping.index')->with('success', 'Mapping Mata Pelajaran berhasil diperbarui!');
         } catch (\Exception $e) {
@@ -180,6 +281,8 @@ class AdminMapingController extends Controller
             return back()->with('error', 'Terjadi kesalahan saat memperbarui data.');
         }
     }
+
+
 
     public function destroy($id)
     {
