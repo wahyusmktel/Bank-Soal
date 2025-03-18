@@ -163,7 +163,7 @@ class AdminMapingController extends Controller
             return back()->with('error', 'Terjadi kesalahan saat menambahkan data.');
         }
     }
-    
+
     public function update(Request $request, $id)
     {
         try {
@@ -180,13 +180,6 @@ class AdminMapingController extends Controller
                 'kelas_id.*' => 'array|min:1',
                 'kelas_id.*.*' => 'uuid|exists:kelas,id',
                 'status' => 'required|boolean',
-            ]);
-
-            Log::info('Data setelah validasi untuk update:', [
-                'guru_id' => $request->guru_id,
-                'data_ujian_id' => $request->data_ujian_id,
-                'mata_pelajaran_id' => $request->mata_pelajaran_id,
-                'kelas_id' => $request->kelas_id,
             ]);
 
             // **Gabungkan kelas ke dalam satu array per mata pelajaran**
@@ -213,8 +206,6 @@ class AdminMapingController extends Controller
             // Konversi ke format JSON yang benar
             $mapelKelasFormatted = array_values($mapelKelasData);
 
-            Log::info('Format JSON sebelum update:', ['mapel_kelas_data' => $mapelKelasFormatted]);
-
             // **Update data mapping**
             $maping->update([
                 'guru_id' => $request->guru_id,
@@ -222,8 +213,6 @@ class AdminMapingController extends Controller
                 'mata_pelajaran_id' => json_encode($mapelKelasFormatted),
                 'status' => $request->status,
             ]);
-
-            Log::info('Mapping berhasil diperbarui:', ['mapping_id' => $maping->id]);
 
             return redirect()->route('admin.maping.index')->with('success', 'Mapping Mata Pelajaran berhasil diperbarui!');
         } catch (\Exception $e) {
