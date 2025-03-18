@@ -14,6 +14,9 @@
                     <th>No</th>
                     <th>Mata Pelajaran</th>
                     <th>Kelas</th>
+                    <th>Tahun Pelajaran</th>
+                    <th>Semester</th>
+                    <th>Data Ujian</th>
                 </tr>
             </thead>
             <tbody>
@@ -24,11 +27,14 @@
                             <td>{{ $no++ }}</td>
                             <td>{{ $data['mapel'] }}</td>
                             <td>{{ $data['kelas'] }}</td>
+                            <td>{{ $maping->dataUjian->tahunPelajaran->nama_tahun ?? '-' }}</td>
+                            <td>{{ $maping->dataUjian->tahunPelajaran->semester ?? '-' }}</td>
+                            <td>{{ $maping->dataUjian->nama_ujian }}</td>
                         </tr>
                     @endforeach
                 @empty
                     <tr>
-                        <td colspan="3" class="text-center">Tidak ada mata pelajaran aktif.</td>
+                        <td colspan="6" class="text-center">Tidak ada mata pelajaran aktif.</td>
                     </tr>
                 @endforelse
             </tbody>

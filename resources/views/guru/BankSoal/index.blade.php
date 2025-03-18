@@ -35,37 +35,19 @@
             <tbody>
                 @forelse ($bankSoals as $index => $soal)
                     @php
-                        // Decode JSON mata_pelajaran_id
-                        $mapelKelasData = json_decode($soal->mata_pelajaran_id, true);
+                        $mapelKelasData = json_decode($soal->mata_pelajaran_id, true) ?? [];
+                        $mapelId = $mapelKelasData['mata_pelajaran_id'] ?? null;
+                        $kelasIds = $mapelKelasData['kelas_id'] ?? [];
 
-                        // Pastikan data berbentuk array valid
-                        if (!is_array($mapelKelasData)) {
-                            $mapelKelasData = [];
-                        }
-
-                        // Ambil ID mata pelajaran dan kelas dari JSON
-                        $mapelId = $mapelKelasData['mata_pelajaran_id'] ?? null; // Mata pelajaran hanya satu ID
-                        $kelasIds = $mapelKelasData['kelas_id'] ?? []; // Kelas bisa lebih dari satu (array)
-
-                        // Ambil nama mata pelajaran berdasarkan ID
                         $mapelNama = \App\Models\MataPelajaran::where('id', $mapelId)->value('nama_mapel');
-
-                        // Ambil nama kelas berdasarkan kelas_id yang dipilih
                         $kelasList = \App\Models\Kelas::whereIn('id', $kelasIds)->pluck('nama_kelas')->toArray();
                     @endphp
                     <tr>
                         <td>{{ ($bankSoals->currentPage() - 1) * $bankSoals->perPage() + $index + 1 }}</td>
-                        <td>{{ $mapelNama ?? 'Unknown Mapel' }}</td> <!-- Menampilkan nama mata pelajaran -->
-                        <td>{{ !empty($kelasList) ? implode(', ', $kelasList) : 'Tidak ada kelas' }}</td>
-                        <!-- Menampilkan daftar kelas -->
-                        {{-- <td>
-                            <a href="{{ asset('storage/' . $soal->file_soal) }}" target="_blank">
-                                {{ basename($soal->file_soal) }}
-                            </a>
-                        </td> --}}
+                        <td>{{ $mapelNama ?? 'Unknown Mapel' }}</td>
+                        <td>{{ implode(', ', $kelasList) ?: 'Tidak ada kelas' }}</td>
                         <td>
-                            <a href="javascript:void(0);" class="open-zip-modal"
-                                data-file="{{ asset('storage/' . $soal->file_soal) }}" data-id="{{ $soal->id }}">
+                            <a href="{{ asset('storage/' . $soal->file_soal) }}" target="_blank">
                                 {{ basename($soal->file_soal) }}
                             </a>
                         </td>
@@ -75,32 +57,16 @@
                             </span>
                         </td>
                         <td>
-                            <div class="dropdown">
-                                <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
-                                    <i class="icon-base ti tabler-dots-vertical"></i>
-                                </button>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="{{ asset('storage/' . $soal->file_soal) }}"
-                                        target="_blank">
-                                        <i class="icon-base ti tabler-eye me-1"></i> Lihat Soal
-                                    </a>
-                                    <a class="dropdown-item edit-bank-soal" href="javascript:void(0);"
-                                        data-id="{{ $soal->id }}" data-file="{{ $soal->file_soal }}"
-                                        data-status="{{ $soal->status }}">
-                                        <i class="icon-base ti tabler-edit me-1"></i> Edit
-                                    </a>
-                                    {{-- <form action="{{ route('guru.bank-soal.destroy', $soal->id) }}" method="POST"
-                                        class="d-inline"
-                                        onsubmit="return confirm('Apakah Anda yakin ingin menghapus soal ini?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="dropdown-item text-danger delete-bank-soal">
-                                            <i class="icon-base ti tabler-trash me-1"></i> Hapus
-                                        </button>
-                                    </form> --}}
-                                </div>
-                            </div>
+                            <button type="button" class="btn btn-sm btn-primary open-zip-modal"
+                                data-id="{{ $soal->id }}">
+                                Lihat Soal
+                            </button>
+                            <button type="button" class="btn btn-sm btn-warning open-preview-modal"
+                                data-id="{{ $soal->id }}">
+                                Preview Soal
+                            </button>
                         </td>
+
                     </tr>
                 @empty
                     <tr>
@@ -109,7 +75,6 @@
                 @endforelse
             </tbody>
         </table>
-
     </div>
 
     <!-- Pagination -->
@@ -118,7 +83,7 @@
     </div>
 
     <!-- Modal Tambah Bank Soal -->
-    <div class="modal fade" id="addBankSoalModal" data-bs-backdrop="static" tabindex="-1"
+    {{-- <div class="modal fade" id="addBankSoalModal" data-bs-backdrop="static" tabindex="-1"
         aria-labelledby="addBankSoalModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -169,6 +134,63 @@
                 </form>
             </div>
         </div>
+    </div> --}}
+
+    <!-- Modal Tambah Bank Soal -->
+    <div class="modal fade" id="addBankSoalModal" data-bs-backdrop="static" tabindex="-1"
+        aria-labelledby="addBankSoalModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addBankSoalModalLabel">Tambah Bank Soal</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="bankSoalForm" action="{{ route('guru.bank-soal.store') }}" method="POST"
+                    enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-body">
+                        <!-- Pilihan Mata Pelajaran -->
+                        <div class="mb-3">
+                            <label class="form-label">Pilih Mata Pelajaran <span class="text-danger">*</span></label>
+                            <select id="mataPelajaranSelect" class="form-control" name="mata_pelajaran_id" required>
+                                <option value="">-- Pilih Mata Pelajaran --</option>
+                                @foreach ($mapingMapels as $maping)
+                                    @foreach ($maping->mapel_kelas_list as $data)
+                                        <option value="{{ $data['mata_pelajaran_id'] }}"
+                                            data-kelas="{{ json_encode($data['kelas']) }}">
+                                            {{ $data['mapel'] }}
+                                        </option>
+                                    @endforeach
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Pilihan Kelas (Multiple Select) -->
+                        <div class="mb-3">
+                            <label class="form-label">Pilih Kelas <span class="text-danger">*</span></label>
+                            <select id="kelasSelect" class="form-control select2" name="kelas_id[]" multiple="multiple"
+                                required>
+                                <option value="">-- Pilih Mata Pelajaran Terlebih Dahulu --</option>
+                            </select>
+                            <small class="text-muted">Bisa memilih lebih dari satu kelas</small>
+                        </div>
+
+                        <!-- Upload File Soal -->
+                        <div class="mb-3">
+                            <label class="form-label">Upload File Soal <span class="text-danger">*</span></label>
+                            <input type="file" class="form-control" name="file_soal" id="fileSoal" accept=".zip"
+                                required>
+                            <small class="text-muted">Format file: .zip (Max: 5MB)</small>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary" id="submitButton">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <!-- Modal untuk menampilkan isi ZIP dalam struktur folder -->
@@ -186,6 +208,96 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            let mataPelajaranSelect = document.getElementById("mataPelajaranSelect");
+            let kelasSelect = document.getElementById("kelasSelect");
+            let fileSoal = document.getElementById("fileSoal");
+
+            // Update pilihan kelas berdasarkan mata pelajaran yang dipilih
+            mataPelajaranSelect.addEventListener("change", function() {
+                let selectedOption = this.options[this.selectedIndex];
+                let kelasData = selectedOption.getAttribute("data-kelas");
+
+                // Kosongkan kelasSelect sebelum menambahkan pilihan baru
+                kelasSelect.innerHTML = "";
+
+                if (kelasData) {
+                    let kelasList = JSON.parse(kelasData); // Pastikan kelasData dalam bentuk array
+
+                    if (Array.isArray(kelasList) && kelasList.length > 0) {
+                        kelasList.forEach(kelas => {
+                            let option = document.createElement("option");
+                            option.value = kelas.id; // Menggunakan UUID sebagai value
+                            option.textContent = kelas.nama; // Menampilkan nama kelas
+                            kelasSelect.appendChild(option);
+                        });
+                    } else {
+                        kelasSelect.innerHTML = `<option value="">-- Tidak Ada Kelas Tersedia --</option>`;
+                    }
+                } else {
+                    kelasSelect.innerHTML =
+                        `<option value="">-- Pilih Mata Pelajaran Terlebih Dahulu --</option>`;
+                }
+            });
+
+            // Validasi File Soal (Hanya ZIP & Maksimal 5MB)
+            fileSoal.addEventListener("change", function() {
+                let file = this.files[0];
+                if (file) {
+                    let fileSizeMB = file.size / (1024 * 1024);
+                    if (!file.name.endsWith(".zip") || fileSizeMB > 5) {
+                        alert("Format file harus .zip dan maksimal 5MB!");
+                        this.value = "";
+                    }
+                }
+            });
+
+            // Cegah Submit Jika Input Tidak Lengkap
+            document.getElementById("bankSoalForm").addEventListener("submit", function(event) {
+                if (!mataPelajaranSelect.value || kelasSelect.value.length === 0 || !fileSoal.value) {
+                    alert("Pastikan semua input sudah diisi!");
+                    event.preventDefault();
+                }
+            });
+        });
+    </script>
+
+    <!-- Modal untuk menampilkan isi ZIP dalam struktur folder -->
+    <div class="modal fade" id="zipContentModal" tabindex="-1" aria-labelledby="zipContentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="zipContentModalLabel">Isi File ZIP</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul id="zipFileTree" class="list-group"></ul>
+                    <!-- Tempat menampilkan daftar file sebagai struktur folder -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal untuk Preview Soal -->
+    <div class="modal fade" id="previewSoalModal" tabindex="-1" aria-labelledby="previewSoalModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="previewSoalModalLabel">Preview Soal</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="soalPreviewContent">
+                        <p class="text-muted">Memuat soal...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
@@ -242,4 +354,107 @@
         });
     </script>
 
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            document.querySelectorAll(".open-preview-modal").forEach(function(element) {
+                element.addEventListener("click", function() {
+                    let soalId = this.getAttribute("data-id");
+
+                    fetch(`/guru/bank-soal/preview/${soalId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log("Data Diterima dari Server:", data); // Debugging
+
+                            let previewContainer = document.getElementById(
+                                "soalPreviewContent");
+                            previewContainer.innerHTML = "";
+
+                            if (data.success) {
+                                if (data.questions.length === 0) {
+                                    previewContainer.innerHTML =
+                                        `<p class='text-warning'>Soal tidak ditemukan dalam file.</p>`;
+                                    return;
+                                }
+
+                                data.questions.forEach((question, index) => {
+                                    let questionElement = document.createElement("div");
+                                    questionElement.innerHTML = `
+                                <h6><strong>Soal ${index + 1}:</strong> ${question.text}</h6>
+                                <ul>
+                                    ${question.options.map(opt => `<li>${opt}</li>`).join("")}
+                                </ul>
+                                <p><strong>Jawaban Benar:</strong> ${question.correctAnswer}</p>
+                                <hr>
+                            `;
+                                    previewContainer.appendChild(questionElement);
+                                });
+
+                                let modal = new bootstrap.Modal(document.getElementById(
+                                    "previewSoalModal"));
+                                modal.show();
+                            } else {
+                                previewContainer.innerHTML =
+                                    `<p class='text-danger'>${data.message}</p>`;
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error:", error);
+                            document.getElementById("soalPreviewContent").innerHTML =
+                                "<p class='text-danger'>Gagal memuat soal.</p>";
+                        });
+                });
+            });
+        });
+
+        // document.addEventListener("DOMContentLoaded", function() {
+        //     document.querySelectorAll(".open-preview-modal").forEach(function(element) {
+        //         element.addEventListener("click", function() {
+        //             let soalId = this.getAttribute("data-id");
+
+        //             fetch(`/guru/bank-soal/preview/${soalId}`)
+        //                 .then(response => response.json())
+        //                 .then(data => {
+        //                     console.log("Data Diterima dari Server:", data); // Debugging
+
+        //                     let previewContainer = document.getElementById(
+        //                         "soalPreviewContent");
+        //                     previewContainer.innerHTML = "";
+
+        //                     if (data.success) {
+        //                         if (data.questions.length === 0) {
+        //                             previewContainer.innerHTML =
+        //                                 `<p class='text-warning'>Soal tidak ditemukan dalam file.</p>`;
+        //                             return;
+        //                         }
+
+        //                         data.questions.forEach((question, index) => {
+        //                             let questionElement = document.createElement("div");
+        //                             questionElement.innerHTML = `
+    //                         <h6><strong>Soal ${index + 1}:</strong> ${question.text}</h6>
+    //                         <ul>
+    //                             ${question.options.map(opt => `<li>${opt}</li>`).join("")}
+    //                         </ul>
+    //                         <p><strong>Jawaban Benar:</strong> ${question.correctAnswer}</p>
+    //                         <hr>
+    //                     `;
+        //                             previewContainer.appendChild(questionElement);
+        //                         });
+
+        //                         let modal = new bootstrap.Modal(document.getElementById(
+        //                             "previewSoalModal"));
+        //                         modal.show();
+        //                     } else {
+        //                         previewContainer.innerHTML =
+        //                             `<p class='text-danger'>${data.message}</p>`;
+        //                     }
+        //                 })
+        //                 .catch(error => {
+        //                     console.error("Error:", error);
+        //                     document.getElementById("soalPreviewContent").innerHTML =
+        //                         "<p class='text-danger'>Gagal memuat soal.</p>";
+        //                 });
+        //         });
+        //     });
+        // });
+    </script>
 @endsection

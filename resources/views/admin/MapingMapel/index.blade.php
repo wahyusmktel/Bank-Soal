@@ -1,371 +1,317 @@
 @extends('layouts.app')
 
-@section('title', 'Mapping Mata Pelajaran')
-
 @section('content')
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Mapping Mata Pelajaran</h5>
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMappingModal">
-                Tambah Mapping
-            </button>
-        </div>
-        <div class="card-body">
+    <div class="container">
+        <h2>Mapping Mata Pelajaran</h2>
+        <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addModal">Tambah Mapping</button>
 
-            <!-- Form Pencarian dan Filter -->
-            <form method="GET" action="{{ route('admin.maping.index') }}" class="mb-3">
-                <div class="row">
-                    <!-- Filter Nama Guru -->
-                    <div class="col-md-3 mt-2">
-                        <label class="form-label">Cari Nama Guru</label>
-                        <input type="text" name="search" value="{{ request('search') }}" class="form-control"
-                            placeholder="Masukan Nama Guru">
-                    </div>
+        {{-- Tabel Data --}}
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Nama Guru</th>
+                    <th>Data Ujian</th>
+                    <th>Tahun Pelajaran</th> <!-- Tambahan -->
+                    <th>Semester</th> <!-- Tambahan -->
+                    <th>Mata Pelajaran & Kelas</th>
+                    <th>Jumlah Bank Soal</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php
+                    $groupedMapings = $mapings->groupBy('guru_id');
+                    $no = 1;
+                @endphp
 
-                    <!-- Filter Data Ujian -->
-                    <div class="col-md-3 mt-2">
-                        <label class="form-label">Data Ujian</label>
-                        <select name="data_ujian_id" class="form-control">
-                            <option value="">-- Pilih Ujian --</option>
-                            @foreach ($dataUjians as $ujian)
-                                <option value="{{ $ujian->id }}"
-                                    {{ request('data_ujian_id') == $ujian->id ? 'selected' : '' }}>
-                                    {{ $ujian->nama_ujian }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+                @foreach ($groupedMapings as $guru_id => $mapingGroup)
+                    @php
+                        $rowspan = count($mapingGroup);
+                        $first = true;
+                    @endphp
 
-                    <!-- Filter Tahun Pelajaran (Dengan Semester) -->
-                    <div class="col-md-3 mt-2">
-                        <label class="form-label">Tahun Pelajaran</label>
-                        <select name="tahun_pelajaran_id" class="form-control">
-                            <option value="">-- Pilih Tahun - Semester --</option>
-                            @foreach ($tahunPelajarans as $tahun)
-                                <option value="{{ $tahun->id }}"
-                                    {{ request('tahun_pelajaran_id') == $tahun->id ? 'selected' : '' }}>
-                                    {{ $tahun->nama_tahun }} - Semester {{ $tahun->semester }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <!-- Tombol Submit -->
-                    <div class="col-md-3 mt-8">
-                        <button type="submit" class="btn btn-primary">Filter</button>
-                        <a href="{{ route('admin.maping.index') }}" class="btn btn-secondary">Reset</a>
-                    </div>
-                </div>
-            </form>
-
-            <!-- Tabel Mapping Mata Pelajaran -->
-            <div class="table-responsive text-nowrap">
-                <table class="table table-hover">
-                    <thead class="table-dark">
+                    @foreach ($mapingGroup as $maping)
                         <tr>
-                            <th>No</th>
-                            <th>Guru</th>
-                            <th>Ujian</th>
-                            <th>Tahun Pelajaran</th>
-                            <th>Mata Pelajaran</th>
-                            <th>Jumlah Mapel</th>
-                            <th>Status</th>
-                            <th>Aksi</th>
+                            @if ($first)
+                                <td rowspan="{{ $rowspan }}" class="text-start align-top">{{ $no++ }}</td>
+                            @endif
+
+                            @if ($first)
+                                <td rowspan="{{ $rowspan }}" class="text-start align-top">{{ $maping->guru->Nama }}</td>
+                            @endif
+
+                            <td class="text-start align-top">{{ $maping->dataUjian->nama_ujian }}</td>
+                            <td>{{ $maping->dataUjian->tahunPelajaran->nama_tahun ?? '-' }}</td>
+                            <td>{{ $maping->dataUjian->tahunPelajaran->semester ?? '-' }}</td>
+
+                            <td class="text-start align-top">
+                                @php
+                                    $mataPelajaran = json_decode($maping->mata_pelajaran_id, true);
+                                @endphp
+                                @if (!empty($mataPelajaran) && is_array($mataPelajaran))
+                                    @foreach ($mataPelajaran as $mapel)
+                                        @php
+                                            $mapelNama = \App\Models\MataPelajaran::find($mapel['mata_pelajaran_id']);
+                                            $kelasNama = \App\Models\Kelas::whereIn('id', $mapel['kelas_id'])
+                                                ->pluck('nama_kelas')
+                                                ->toArray();
+                                        @endphp
+                                        <strong>{{ $mapelNama->nama_mapel ?? 'Tidak Ditemukan' }}</strong>:
+                                        {{ implode(', ', $kelasNama) }} <br>
+                                    @endforeach
+                                @else
+                                    <span class="text-muted">Belum ada data</span>
+                                @endif
+                            </td>
+
+                            <td class="text-center align-middle">
+                                @php
+                                    // Hitung jumlah mata pelajaran spesifik di baris ini
+                                    $jumlahMapelBaris = count($mataPelajaran ?? []);
+                                @endphp
+                                {{ $jumlahMapelBaris }}
+                            </td>
+
+                            @if ($first)
+                                <td rowspan="{{ $rowspan }}" class="align-middle">
+                                    <span class="badge bg-success">Aktif</span>
+                                </td>
+                            @endif
+
+
+                            <td>
+                                <button class="btn btn-warning btn-sm edit-btn" data-bs-toggle="modal"
+                                    data-bs-target="#editModal" data-id="{{ $maping->id }}"
+                                    data-guru_id="{{ $maping->guru_id }}"
+                                    data-data_ujian_id="{{ $maping->data_ujian_id }}"
+                                    data-mata_pelajaran="{{ $maping->mata_pelajaran_id }}">
+                                    Edit
+                                </button>
+
+                                <form action="{{ route('admin.maping.destroy', $maping->id) }}" method="POST"
+                                    class="d-inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-danger btn-sm"
+                                        onclick="return confirm('Apakah Anda yakin ingin menghapus data ini?')">
+                                        Hapus
+                                    </button>
+                                </form>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($mapingMapels as $index => $maping)
-                            <tr>
-                                <td align="left" valign="top">
-                                    {{ ($mapingMapels->currentPage() - 1) * $mapingMapels->perPage() + $index + 1 }}</td>
-                                <td align="left" valign="top">{{ $maping->guru->Nama }}</td>
-                                <td align="left" valign="top">{{ $maping->dataUjian->nama_ujian }}</td>
-                                <td align="left" valign="top">
-                                    {{ $maping->dataUjian->tahunPelajaran->nama_tahun ?? '-' }} - Semester
-                                    {{ $maping->dataUjian->tahunPelajaran->semester ?? '-' }}</td>
-                                <td>
-                                    {!! $maping->mapel_kelas_nama !!}
-                                </td>
-                                <td align="left" valign="top">{{ $maping->jumlah_mapel }}</td>
-                                <td>
-                                    <span class="badge {{ $maping->status ? 'bg-success' : 'bg-danger' }}">
-                                        {{ $maping->status ? 'Active' : 'Inactive' }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="dropdown">
-                                        <button type="button" class="btn p-0 dropdown-toggle hide-arrow"
-                                            data-bs-toggle="dropdown">
-                                            <i class="icon-base ti tabler-dots-vertical"></i>
-                                        </button>
-                                        <div class="dropdown-menu">
-                                            <!-- Tombol Edit -->
-                                            <a class="dropdown-item edit-mapping" href="javascript:void(0);"
-                                                data-id="{{ $maping->id }}" data-guru="{{ $maping->guru_id }}"
-                                                data-ujian="{{ $maping->data_ujian_id }}"
-                                                data-mata-pelajaran="{{ $maping->mata_pelajaran_id }}"
-                                                data-status="{{ $maping->status }}">
-                                                <i class="icon-base ti tabler-edit me-1"></i> Edit
-                                            </a>
 
-                                            <!-- Tombol Delete -->
-                                            <form action="{{ route('admin.maping.destroy', $maping->id) }}" method="POST"
-                                                class="d-inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="dropdown-item text-danger delete-mapping">
-                                                    <i class="icon-base ti tabler-trash me-1"></i> Delete
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </td>
-
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="text-center">Tidak ada data mapping.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination -->
-            <div class="d-flex justify-content-center mt-3">
-                {{ $mapingMapels->links('vendor.pagination.bootstrap-4') }}
-            </div>
-        </div>
+                        @php $first = false; @endphp
+                    @endforeach
+                @endforeach
+            </tbody>
+        </table>
     </div>
 
-    <!-- Modal Tambah Mapping -->
-    <div class="modal fade" id="addMappingModal" data-bs-backdrop="static" tabindex="-1"
-        aria-labelledby="addMappingModalLabel" aria-hidden="true">
+    {{-- Modal Tambah Data --}}
+    <div class="modal fade" id="addModal" tabindex="-1">
         <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addMappingModalLabel">Tambah Mapping Mata Pelajaran & Kelas</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form action="{{ route('admin.maping.store') }}" method="POST">
-                    @csrf
+            <form action="{{ route('admin.maping.store') }}" method="POST">
+                @csrf
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Tambah Mapping Mata Pelajaran</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
                     <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label">Pilih Guru</label>
-                            <select class="form-control" name="guru_id" required>
-                                <option value="">-- Pilih Guru --</option>
+                        <div class="mb-2">
+                            <label>Nama Guru</label>
+                            <select name="guru_id" class="form-control" required>
+                                <option value="" disabled selected>Pilih Guru</option>
                                 @foreach ($gurus as $guru)
                                     <option value="{{ $guru->id }}">{{ $guru->Nama }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Pilih Ujian</label>
-                            <select class="form-control" name="data_ujian_id" required>
-                                <option value="">-- Pilih Ujian --</option>
-                                @foreach ($dataUjians as $ujian)
-                                    <option value="{{ $ujian->id }}">{{ $ujian->nama_ujian }}</option>
+                        <div class="mb-2">
+                            <label>Data Ujian</label>
+                            <select name="data_ujian_id" class="form-control" required>
+                                <option value="" disabled selected>Pilih Data Ujian</option>
+                                @foreach ($dataUjians as $dataUjian)
+                                    <option value="{{ $dataUjian->id }}">{{ $dataUjian->nama_ujian }}</option>
                                 @endforeach
                             </select>
                         </div>
 
-                        <!-- Pilihan Mata Pelajaran dan Kelas -->
-                        <div class="mb-3">
-                            <label class="form-label">Pilih Mata Pelajaran & Kelas</label>
-                            <div id="mapelKelasContainer">
-                                <div class="d-flex mb-2">
-                                    <select class="form-control mapel-select" name="mata_pelajaran_id[]" required>
-                                        <option value="">-- Pilih Mata Pelajaran --</option>
+                        <div id="mapel-container">
+                            <div class="row mb-2">
+                                <div class="col-5">
+                                    <label>Mata Pelajaran</label>
+                                    <select class="form-control" name="mata_pelajaran[0][mata_pelajaran_id]" required>
+                                        <option value="" disabled selected>Pilih Mata Pelajaran</option>
                                         @foreach ($mataPelajarans as $mapel)
                                             <option value="{{ $mapel->id }}">{{ $mapel->nama_mapel }}</option>
                                         @endforeach
                                     </select>
-                                    <select class="form-control kelas-select ms-2" name="kelas_id[0][]" multiple required>
-                                        <option value="">-- Pilih Kelas --</option>
-                                        @foreach ($kelasuuu as $item)
-                                            <option value="{{ $item->id }}">{{ $item->nama_kelas }}</option>
+                                </div>
+                                <div class="col-5">
+                                    <label>Kelas</label>
+                                    <select class="form-control kelas-select" name="mata_pelajaran[0][kelas_id][]" multiple
+                                        required>
+                                        @foreach ($kelas as $kls)
+                                            <option value="{{ $kls->id }}">{{ $kls->nama_kelas }}</option>
                                         @endforeach
                                     </select>
-                                    <button type="button" class="btn btn-danger ms-2 remove-mapping">X</button>
+                                </div>
+                                <div class="col-2 d-flex align-items-end">
+                                    <button type="button" class="btn btn-danger remove-mapel">X</button>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-success mt-2" id="addMapping">Tambah Mata
-                                Pelajaran</button>
                         </div>
-                    </div>
 
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-primary">Simpan</button>
+                        <button type="button" class="btn btn-success" id="addMapel">Tambah Mata Pelajaran</button>
+
                     </div>
-                </form>
-            </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Simpan</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 
-    <!-- Modal Edit Mapping -->
-    <div class="modal fade" id="editMappingModal" data-bs-backdrop="static" tabindex="-1"
-        aria-labelledby="editMappingModalLabel" aria-hidden="true">
+    <div class="modal fade" id="editModal" tabindex="-1">
         <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editMappingModalLabel">Edit Mapping Mata Pelajaran & Kelas</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form id="editMappingForm" method="POST">
-                    @csrf
-                    @method('PUT')
+            <form id="editForm" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Edit Mapping Mata Pelajaran</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
                     <div class="modal-body">
-                        <input type="hidden" id="editMappingId" name="id">
+                        <input type="hidden" id="edit_id" name="id">
 
-                        <div class="mb-3">
-                            <label class="form-label">Pilih Guru</label>
-                            <select class="form-control" name="guru_id" id="editGuruId" required>
-                                <option value="">-- Pilih Guru --</option>
+                        <div class="mb-2">
+                            <label>Nama Guru</label>
+                            <select name="guru_id" id="edit_guru_id" class="form-control" required>
+                                <option value="" disabled selected>Pilih Guru</option>
                                 @foreach ($gurus as $guru)
                                     <option value="{{ $guru->id }}">{{ $guru->Nama }}</option>
                                 @endforeach
                             </select>
                         </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Pilih Ujian</label>
-                            <select class="form-control" name="data_ujian_id" id="editUjianId" required>
-                                <option value="">-- Pilih Ujian --</option>
-                                @foreach ($dataUjians as $ujian)
-                                    <option value="{{ $ujian->id }}">{{ $ujian->nama_ujian }}</option>
+                        <div class="mb-2">
+                            <label>Data Ujian</label>
+                            <select name="data_ujian_id" id="edit_data_ujian_id" class="form-control" required>
+                                <option value="" disabled selected>Pilih Data Ujian</option>
+                                @foreach ($dataUjians as $dataUjian)
+                                    <option value="{{ $dataUjian->id }}">{{ $dataUjian->nama_ujian }}</option>
                                 @endforeach
                             </select>
                         </div>
 
-                        <!-- Mata Pelajaran & Kelas -->
-                        <div class="mb-3">
-                            <label class="form-label">Pilih Mata Pelajaran & Kelas</label>
-                            <div id="editMapelKelasContainer"></div>
-                            <button type="button" class="btn btn-success mt-2" id="addMappingEdit">Tambah Mata
-                                Pelajaran</button>
-                        </div>
+                        <div id="edit_mapel_container"></div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Status</label>
-                            <select class="form-control" name="status" id="editStatus" required>
-                                <option value="1">Active</option>
-                                <option value="0">Inactive</option>
-                            </select>
-                        </div>
+                        <button type="button" class="btn btn-success" id="editAddMapel">Tambah Mata Pelajaran</button>
                     </div>
-
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-primary">Update</button>
+                        <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
                     </div>
-                </form>
-            </div>
+                </div>
+            </form>
         </div>
     </div>
 
-
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            document.getElementById("addMapping").addEventListener("click", function() {
-                let container = document.getElementById("mapelKelasContainer");
-                container.appendChild(createMapelKelasRow());
-            });
+        document.getElementById('addMapel').addEventListener('click', function() {
+            let index = document.querySelectorAll('#mapel-container .row').length;
+            let newRow = document.querySelector('#mapel-container .row').cloneNode(true);
 
-            document.getElementById("addMappingEdit").addEventListener("click", function() {
-                let container = document.getElementById("editMapelKelasContainer");
-                container.appendChild(createMapelKelasRow());
-            });
+            newRow.querySelector('select[name^="mata_pelajaran"]').setAttribute('name',
+                `mata_pelajaran[${index}][mata_pelajaran_id]`);
+            newRow.querySelector('select.kelas-select').setAttribute('name',
+                `mata_pelajaran[${index}][kelas_id][]`);
 
-            document.querySelectorAll(".edit-mapping").forEach(function(button) {
-                button.addEventListener("click", function() {
-                    let mappingId = this.getAttribute("data-id");
-                    let guruId = this.getAttribute("data-guru");
-                    let ujianId = this.getAttribute("data-ujian");
-                    let mataPelajaranData = JSON.parse(this.getAttribute("data-mata-pelajaran"));
-                    let status = this.getAttribute("data-status");
-
-                    document.getElementById("editMappingId").value = mappingId;
-                    document.getElementById("editGuruId").value = guruId;
-                    document.getElementById("editUjianId").value = ujianId;
-                    document.getElementById("editStatus").value = status;
-
-                    let container = document.getElementById("editMapelKelasContainer");
-                    container.innerHTML = "";
-
-                    mataPelajaranData.forEach(function(data) {
-                        let row = createMapelKelasRow(data.mata_pelajaran_id, data
-                            .kelas_id);
-                        container.appendChild(row);
-                    });
-
-                    document.getElementById("editMappingForm").setAttribute("action",
-                        "/admin/maping/" + mappingId);
-                    new bootstrap.Modal(document.getElementById("editMappingModal")).show();
-                });
-            });
-
-
-
-            function createMapelKelasRow(selectedMapel = "", selectedKelas = []) {
-                let newRow = document.createElement("div");
-                newRow.classList.add("d-flex", "mb-2");
-
-                let mapelSelect = `
-    <select class="form-control mapel-select" name="mata_pelajaran_id[]" required>
-        <option value="">-- Pilih Mata Pelajaran --</option>
-        @foreach ($mataPelajarans as $mapel)
-            <option value="{{ $mapel->id }}" ${selectedMapel === '{{ $mapel->id }}' ? 'selected' : ''}>
-                {{ $mapel->nama_mapel }}
-            </option>
-        @endforeach
-    </select>
-    `;
-
-                let kelasSelect = `
-    <select class="form-control kelas-select ms-2" name="kelas_id[${selectedMapel || 'temp'}][]" multiple required>
-        <option value="">-- Pilih Kelas --</option>
-        @foreach ($kelasuuu as $item)
-            <option value="{{ $item->id }}" ${selectedKelas.includes('{{ $item->id }}') ? 'selected' : ''}>
-                {{ $item->nama_kelas }}
-            </option>
-        @endforeach
-    </select>
-    `;
-
-                newRow.innerHTML = mapelSelect + kelasSelect + `
-    <button type="button" class="btn btn-danger ms-2 remove-mapping">X</button>
-    `;
-
-                // Event: Saat Mata Pelajaran Dipilih, Update `name` di Kelas
-                let mapelDropdown = newRow.querySelector(".mapel-select");
-                let kelasDropdown = newRow.querySelector(".kelas-select");
-
-                mapelDropdown.addEventListener("change", function() {
-                    let selectedValue = this.value;
-                    if (selectedValue) {
-                        kelasDropdown.name =
-                            `kelas_id[${selectedValue}][]`; // Update name sesuai mata_pelajaran_id
-                    }
-                });
-
-                newRow.querySelector(".remove-mapping").addEventListener("click", function() {
-                    newRow.remove();
-                });
-
-                return newRow;
-            }
-
-
+            document.getElementById('mapel-container').appendChild(newRow);
         });
 
-        document.querySelectorAll(".delete-mapping").forEach(function(button) {
-            button.addEventListener("click", function(event) {
-                if (!confirm("Apakah Anda yakin ingin menghapus mapping ini?")) {
-                    event.preventDefault();
-                }
-            });
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('remove-mapel')) {
+                event.target.closest('.row').remove();
+            }
         });
     </script>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.edit-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    let id = this.getAttribute('data-id');
+                    let guru_id = this.getAttribute('data-guru_id');
+                    let data_ujian_id = this.getAttribute('data-data_ujian_id');
+                    let mataPelajaran = JSON.parse(this.getAttribute('data-mata_pelajaran') ||
+                        '[]');
+
+                    document.getElementById('edit_id').value = id;
+                    document.getElementById('edit_guru_id').value = guru_id;
+                    document.getElementById('edit_data_ujian_id').value = data_ujian_id;
+
+                    let container = document.getElementById('edit_mapel_container');
+                    container.innerHTML = '';
+
+                    mataPelajaran.forEach((mapel, index) => {
+                        let html = generateMapelRow(index, mapel.mata_pelajaran_id, mapel
+                            .kelas_id);
+                        container.insertAdjacentHTML('beforeend', html);
+                    });
+
+                    document.getElementById('editForm').setAttribute('action',
+                        `/admin/maping/${id}`);
+                });
+            });
+
+            document.getElementById('editAddMapel').addEventListener('click', function() {
+                let index = document.querySelectorAll('#edit_mapel_container .row').length;
+                let html = generateMapelRow(index, null, []);
+                document.getElementById('edit_mapel_container').insertAdjacentHTML('beforeend', html);
+            });
+
+            document.addEventListener('click', function(event) {
+                if (event.target.classList.contains('remove-mapel')) {
+                    event.target.closest('.row').remove();
+                }
+            });
+
+            function generateMapelRow(index, selectedMapel, selectedKelas) {
+                let mapelOptions = `@foreach ($mataPelajarans as $mapel)
+            <option value="{{ $mapel->id }}" ${selectedMapel == "{{ $mapel->id }}" ? 'selected' : ''}>{{ $mapel->nama_mapel }}</option>
+        @endforeach`;
+
+                let kelasOptions = `@foreach ($kelas as $kls)
+            <option value="{{ $kls->id }}" ${selectedKelas.includes("{{ $kls->id }}") ? 'selected' : ''}>{{ $kls->nama_kelas }}</option>
+        @endforeach`;
+
+                return `
+            <div class="row mb-2">
+                <div class="col-5">
+                    <label>Mata Pelajaran</label>
+                    <select class="form-control" name="mata_pelajaran[${index}][mata_pelajaran_id]" required>
+                        <option value="" disabled selected>Pilih Mata Pelajaran</option>
+                        ${mapelOptions}
+                    </select>
+                </div>
+                <div class="col-5">
+                    <label>Kelas</label>
+                    <select class="form-control kelas-select" name="mata_pelajaran[${index}][kelas_id][]" multiple required>
+                        ${kelasOptions}
+                    </select>
+                </div>
+                <div class="col-2 d-flex align-items-end">
+                    <button type="button" class="btn btn-danger remove-mapel">X</button>
+                </div>
+            </div>
+        `;
+            }
+        });
+    </script>
 @endsection
