@@ -234,32 +234,34 @@ class GuruBankSoalController extends Controller
 
             $zip = new ZipArchive;
             if ($zip->open($zipPath) === TRUE) {
-                $tempDir = storage_path('app/temp/' . uniqid());
-                mkdir($tempDir, 0777, true);
-                $zip->extractTo($tempDir);
+                $extractPath = storage_path("app/public/bank-soal/{$id}");
+                if (!file_exists($extractPath)) {
+                    mkdir($extractPath, 0777, true);
+                }
+                $zip->extractTo($extractPath);
                 $zip->close();
 
-                // Cari file soal dalam ZIP Blackboard (_questions.dat)
-                $questionFiles = glob("$tempDir/*_questions.dat");
+                // Cari file soal dalam ZIP Blackboard (bisa .dat, .xml)
+                $questionFiles = glob("$extractPath/*_questions.dat");
 
                 if (empty($questionFiles)) {
                     return response()->json(['success' => false, 'message' => 'File soal tidak ditemukan dalam ZIP']);
                 }
 
-                // Debugging: Log nama file soal
+                // Debugging: Log file soal ditemukan
                 Log::info('File Soal Ditemukan:', ['file' => $questionFiles[0]]);
 
-                // Baca isi file soal
                 $datContent = file_get_contents($questionFiles[0]);
                 Log::info('Isi File Soal:', ['content' => $datContent]);
 
-                // Parsing file XML Blackboard
-                $questions = $this->parseBlackboardXML($datContent);
+                // Parsing file XML
+                $questions = $this->parseBlackboardXML($datContent, $id);
 
-                // Hapus direktori sementara
-                $this->deleteDirectory($tempDir);
-
-                return response()->json(['success' => true, 'questions' => $questions]);
+                return response()->json([
+                    'success' => true,
+                    'questions' => $questions,
+                    'image_path' => asset("storage/bank-soal/{$id}/")
+                ]);
             } else {
                 return response()->json(['success' => false, 'message' => 'Gagal membuka file ZIP']);
             }
@@ -269,12 +271,23 @@ class GuruBankSoalController extends Controller
         }
     }
 
-    private function parseBlackboardXML($xmlContent)
+    private function parseBlackboardXML($xmlContent, $id)
     {
         try {
             $xml = simplexml_load_string($xmlContent);
             $questions = [];
             $labels = ['A', 'B', 'C', 'D', 'E']; // Label untuk pilihan ganda
+            // ✅ Cari folder gambar utama (karena bisa berbeda di setiap soal)
+            $baseImagePath = storage_path("app/public/bank-soal/{$id}/");
+            $imageFolders = glob("{$baseImagePath}ppg/examview/*", GLOB_ONLYDIR);
+            $imageFolderPath = $imageFolders[0] ?? null; // Ambil folder pertama (jika ada)
+
+            if ($imageFolderPath) {
+                $imageFolderName = basename($imageFolderPath);
+                $publicImagePath = asset("storage/bank-soal/{$id}/ppg/examview/{$imageFolderName}/00001_res/");
+            } else {
+                $publicImagePath = asset("storage/bank-soal/{$id}/");
+            }
 
             foreach ($xml->assessment->section->item as $item) {
                 // **✅ Ambil teks pertanyaan**
@@ -282,6 +295,12 @@ class GuruBankSoalController extends Controller
                 if ($item->xpath('.//mat_formattedtext')) {
                     $questionText = (string) $item->xpath('.//mat_formattedtext')[0];
                 }
+
+                // **✅ Ganti path gambar dalam pertanyaan**
+                $questionText = preg_replace_callback('/<img .*?src="(.*?)".*?>/i', function ($matches) use ($publicImagePath) {
+                    $imageSrc = basename($matches[1]); // Ambil nama file gambar
+                    return '<img src="' . $publicImagePath . '/' . $imageSrc . '" class="img-fluid" />';
+                }, $questionText);
 
                 // **✅ Ambil opsi jawaban**
                 $options = [];
@@ -297,7 +316,13 @@ class GuruBankSoalController extends Controller
                         $answerText = (string) $responseLabel->xpath('.//mat_formattedtext')[0];
                     }
 
-                    $cleanAnswerText = strip_tags(html_entity_decode($answerText));
+                    // **✅ Ganti path gambar dalam opsi jawaban**
+                    $answerText = preg_replace_callback('/<img .*?src="(.*?)".*?>/i', function ($matches) use ($baseImagePath) {
+                        $imageSrc = basename($matches[1]); // Ambil nama file gambar
+                        return '<img src="' . $baseImagePath . $imageSrc . '" class="img-fluid" />';
+                    }, $answerText);
+
+                    $cleanAnswerText = strip_tags(html_entity_decode($answerText), '<img>');
 
                     // ✅ Format jawaban dengan label A, B, C, D, E
                     $label = $labels[$index] ?? chr(65 + $index);
@@ -321,8 +346,8 @@ class GuruBankSoalController extends Controller
 
                 // **✅ Simpan hasil parsing**
                 $questions[] = [
-                    'text' => trim(strip_tags(html_entity_decode($questionText))), // Bersihkan pertanyaan
-                    'options' => $options, // Simpan opsi
+                    'text' => trim(strip_tags(html_entity_decode($questionText), '<img>')), // Bersihkan pertanyaan tapi tetap simpan gambar
+                    'options' => $options, // Simpan opsi jawaban
                     'correctAnswer' => trim(strip_tags(html_entity_decode($correctAnswer))), // Simpan jawaban benar
                 ];
             }
@@ -335,7 +360,6 @@ class GuruBankSoalController extends Controller
             return [];
         }
     }
-
 
     /**
      * Fungsi untuk Menghapus Direktori Sementara

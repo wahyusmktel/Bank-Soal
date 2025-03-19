@@ -280,10 +280,37 @@
         </div>
     </div>
 
+    <style>
+        .pagination-container {
+            display: flex;
+            flex-wrap: wrap;
+            /* 🔹 Membungkus ke baris baru jika penuh */
+            justify-content: center;
+            max-width: 100%;
+            overflow: hidden;
+            /* 🔹 Menghindari overflow */
+            padding: 10px;
+            gap: 5px;
+        }
+
+        .pagination .page-item {
+            flex: 0 1 auto;
+            /* 🔹 Membuat item tidak memanjang */
+        }
+
+        .pagination .page-item a {
+            min-width: 40px;
+            /* 🔹 Ukuran tombol yang seragam */
+            text-align: center;
+            padding: 8px;
+            border-radius: 5px;
+        }
+    </style>
+
     <!-- Modal untuk Preview Soal -->
-    <div class="modal fade" id="previewSoalModal" tabindex="-1" aria-labelledby="previewSoalModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+    <div class="modal fade" id="previewSoalModal" data-bs-backdrop="static" tabindex="-1"
+        aria-labelledby="previewSoalModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="previewSoalModalLabel">Preview Soal</h5>
@@ -294,9 +321,81 @@
                         <p class="text-muted">Memuat soal...</p>
                     </div>
                 </div>
+                <div class="modal-footer">
+                    {{-- <div class="col-lg-12">
+                        <div class="demo-inline-spacing">
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination pagination-rounded justify-content-center">
+                                    <!-- Pagination akan diisi oleh JavaScript -->
+                                </ul>
+                            </nav>
+                        </div>
+                    </div> --}}
+                    <div class="col-lg-12">
+                        <div class="pagination-container">
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination pagination-rounded justify-content-center" id="paginationContainer">
+                                    <!-- 🔹 Nomor soal akan dimasukkan lewat JavaScript -->
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Modal untuk Preview Soal Fix-->
+    {{-- <div class="modal fade" id="previewSoalModal" data-bs-backdrop="static" tabindex="-1"
+        aria-labelledby="previewSoalModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="previewSoalModalLabel">Preview Soal</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="soalPreviewContent">
+                        <p class="text-muted">Memuat soal...</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="col-lg-12">
+                        <div class="demo-inline-spacing">
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination pagination-rounded justify-content-center">
+                                    <li class="page-item prev">
+                                        <a class="page-link" href="javascript:void(0);"><i
+                                                class="icon-base ti tabler-chevrons-left icon-sm"></i></a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="javascript:void(0);">1</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="javascript:void(0);">2</a>
+                                    </li>
+                                    <li class="page-item active">
+                                        <a class="page-link" href="javascript:void(0);">3</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="javascript:void(0);">4</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="javascript:void(0);">5</a>
+                                    </li>
+                                    <li class="page-item next">
+                                        <a class="page-link" href="javascript:void(0);"><i
+                                                class="icon-base ti tabler-chevrons-right icon-sm"></i></a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> --}}
 
 
     <script>
@@ -367,7 +466,9 @@
 
                             let previewContainer = document.getElementById(
                                 "soalPreviewContent");
+                            let paginationContainer = document.querySelector(".pagination");
                             previewContainer.innerHTML = "";
+                            paginationContainer.innerHTML = "";
 
                             if (data.success) {
                                 if (data.questions.length === 0) {
@@ -376,19 +477,79 @@
                                     return;
                                 }
 
-                                data.questions.forEach((question, index) => {
-                                    let questionElement = document.createElement("div");
-                                    questionElement.innerHTML = `
+                                let currentPage = 0; // Mulai dari soal pertama
+                                let totalQuestions = data.questions.length;
+
+                                function showQuestion(index) {
+                                    let question = data.questions[index];
+                                    previewContainer.innerHTML = `
                                 <h6><strong>Soal ${index + 1}:</strong> ${question.text}</h6>
                                 <ul>
                                     ${question.options.map(opt => `<li>${opt}</li>`).join("")}
                                 </ul>
                                 <p><strong>Jawaban Benar:</strong> ${question.correctAnswer}</p>
-                                <hr>
                             `;
-                                    previewContainer.appendChild(questionElement);
-                                });
+                                    updatePagination(index);
+                                }
 
+                                function updatePagination(currentIndex) {
+                                    let paginationHTML = `
+        <li class="page-item prev ${currentIndex === 0 ? 'disabled' : ''}">
+            <a class="page-link prev-btn" href="javascript:void(0);"><i class="icon-base ti tabler-chevrons-left icon-sm"></i></a>
+        </li>
+    `;
+
+                                    for (let i = 0; i < totalQuestions; i++) {
+                                        paginationHTML += `
+            <li class="page-item ${i === currentIndex ? 'active' : ''}">
+                <a class="page-link page-btn" href="javascript:void(0);" data-index="${i}">${i + 1}</a>
+            </li>
+        `;
+                                    }
+
+                                    paginationHTML += `
+        <li class="page-item next ${currentIndex === totalQuestions - 1 ? 'disabled' : ''}">
+            <a class="page-link next-btn" href="javascript:void(0);"><i class="icon-base ti tabler-chevrons-right icon-sm"></i></a>
+        </li>
+    `;
+
+                                    paginationContainer.innerHTML = paginationHTML;
+
+                                    // Tambahkan event listener untuk tombol nomor soal
+                                    document.querySelectorAll(".pagination .page-btn").forEach(
+                                        item => {
+                                            item.addEventListener("click", function() {
+                                                let newIndex = parseInt(this
+                                                    .getAttribute("data-index"));
+                                                if (!isNaN(newIndex)) {
+                                                    currentPage = newIndex;
+                                                    showQuestion(currentPage);
+                                                }
+                                            });
+                                        });
+
+                                    // Event listener untuk tombol prev dan next
+                                    document.querySelector(".pagination .prev-btn")
+                                        .addEventListener("click", function() {
+                                            if (currentPage > 0) {
+                                                currentPage--;
+                                                showQuestion(currentPage);
+                                            }
+                                        });
+
+                                    document.querySelector(".pagination .next-btn")
+                                        .addEventListener("click", function() {
+                                            if (currentPage < totalQuestions - 1) {
+                                                currentPage++;
+                                                showQuestion(currentPage);
+                                            }
+                                        });
+                                }
+
+                                // Tampilkan soal pertama kali
+                                showQuestion(currentPage);
+
+                                // Tampilkan modal
                                 let modal = new bootstrap.Modal(document.getElementById(
                                     "previewSoalModal"));
                                 modal.show();
@@ -405,6 +566,58 @@
                 });
             });
         });
+
+        // Sudah Fix
+        // document.addEventListener("DOMContentLoaded", function() {
+        //     document.querySelectorAll(".open-preview-modal").forEach(function(element) {
+        //         element.addEventListener("click", function() {
+        //             let soalId = this.getAttribute("data-id");
+
+        //             fetch(`/guru/bank-soal/preview/${soalId}`)
+        //                 .then(response => response.json())
+        //                 .then(data => {
+        //                     console.log("Data Diterima dari Server:", data); // Debugging
+
+        //                     let previewContainer = document.getElementById(
+        //                         "soalPreviewContent");
+        //                     previewContainer.innerHTML = "";
+
+        //                     if (data.success) {
+        //                         if (data.questions.length === 0) {
+        //                             previewContainer.innerHTML =
+        //                                 `<p class='text-warning'>Soal tidak ditemukan dalam file.</p>`;
+        //                             return;
+        //                         }
+
+        //                         data.questions.forEach((question, index) => {
+        //                             let questionElement = document.createElement("div");
+        //                             questionElement.innerHTML = `
+    //                         <h6><strong>Soal ${index + 1}:</strong> ${question.text}</h6>
+    //                         <ul>
+    //                             ${question.options.map(opt => `<li>${opt}</li>`).join("")}
+    //                         </ul>
+    //                         <p><strong>Jawaban Benar:</strong> ${question.correctAnswer}</p>
+    //                         <hr>
+    //                     `;
+        //                             previewContainer.appendChild(questionElement);
+        //                         });
+
+        //                         let modal = new bootstrap.Modal(document.getElementById(
+        //                             "previewSoalModal"));
+        //                         modal.show();
+        //                     } else {
+        //                         previewContainer.innerHTML =
+        //                             `<p class='text-danger'>${data.message}</p>`;
+        //                     }
+        //                 })
+        //                 .catch(error => {
+        //                     console.error("Error:", error);
+        //                     document.getElementById("soalPreviewContent").innerHTML =
+        //                         "<p class='text-danger'>Gagal memuat soal.</p>";
+        //                 });
+        //         });
+        //     });
+        // });
 
         // document.addEventListener("DOMContentLoaded", function() {
         //     document.querySelectorAll(".open-preview-modal").forEach(function(element) {
