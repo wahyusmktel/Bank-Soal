@@ -561,11 +561,22 @@
                                     for (let i = 0; i < totalQuestions; i++) {
                                         if (i % perRow === 0) paginationHTML +=
                                             `<div class='col-12 d-flex justify-content-center'>`;
+
+                                        // **🔥 Cek apakah soal ini sudah divalidasi**
+                                        let isValidated = data.questions[i]
+                                            .keterangan_validasi || false;
+                                        let activeClass = i === currentPage ? 'active' : '';
+                                        let validatedClass = isValidated ?
+                                            'bg-success text-white' : '';
+
                                         paginationHTML += `
-                                    <li class="page-item ${i === currentPage ? 'active' : ''}">
-                                        <a class="page-link page-btn" href="javascript:void(0);" data-index="${i}">${i + 1}</a>
-                                    </li>
-                                `;
+            <li class="page-item ${activeClass}">
+                <a class="page-link page-btn ${validatedClass}" href="javascript:void(0);" data-index="${i}">
+                    ${i + 1}
+                </a>
+            </li>
+        `;
+
                                         if ((i + 1) % perRow === 0 || i === totalQuestions - 1)
                                             paginationHTML += `</div>`;
                                     }
@@ -624,14 +635,6 @@
                                             }
                                             return res.json();
                                         })
-                                        // .then(response => {
-                                        //     console.log("Validasi berhasil disimpan:",
-                                        //         response.message);
-
-                                        //     // 🔥 Update alert setelah validasi berhasil
-                                        //     updateValidasiAlert(validasiCheckbox
-                                        //         .checked, currentPage);
-                                        // })
                                         .then(response => {
                                             console.log("Validasi berhasil disimpan:",
                                                 response.message);
@@ -644,6 +647,9 @@
                                             // **✅ Perbarui alert validasi secara real-time**
                                             updateValidasiAlert(validasiCheckbox
                                                 .checked, currentPage);
+
+                                            // **✅ Perbarui warna pagination**
+                                            updatePagination();
 
                                             // **✅ Debugging log**
                                             console.log(
@@ -676,108 +682,5 @@
                 });
             });
         });
-
-        // Sudah Fix
-        // document.addEventListener("DOMContentLoaded", function() {
-        //     document.querySelectorAll(".open-preview-modal").forEach(function(element) {
-        //         element.addEventListener("click", function() {
-        //             let soalId = this.getAttribute("data-id");
-
-        //             fetch(`/guru/bank-soal/preview/${soalId}`)
-        //                 .then(response => response.json())
-        //                 .then(data => {
-        //                     console.log("Data Diterima dari Server:", data); // Debugging
-
-        //                     let previewContainer = document.getElementById(
-        //                         "soalPreviewContent");
-        //                     previewContainer.innerHTML = "";
-
-        //                     if (data.success) {
-        //                         if (data.questions.length === 0) {
-        //                             previewContainer.innerHTML =
-        //                                 `<p class='text-warning'>Soal tidak ditemukan dalam file.</p>`;
-        //                             return;
-        //                         }
-
-        //                         data.questions.forEach((question, index) => {
-        //                             let questionElement = document.createElement("div");
-        //                             questionElement.innerHTML = `
-    //                         <h6><strong>Soal ${index + 1}:</strong> ${question.text}</h6>
-    //                         <ul>
-    //                             ${question.options.map(opt => `<li>${opt}</li>`).join("")}
-    //                         </ul>
-    //                         <p><strong>Jawaban Benar:</strong> ${question.correctAnswer}</p>
-    //                         <hr>
-    //                     `;
-        //                             previewContainer.appendChild(questionElement);
-        //                         });
-
-        //                         let modal = new bootstrap.Modal(document.getElementById(
-        //                             "previewSoalModal"));
-        //                         modal.show();
-        //                     } else {
-        //                         previewContainer.innerHTML =
-        //                             `<p class='text-danger'>${data.message}</p>`;
-        //                     }
-        //                 })
-        //                 .catch(error => {
-        //                     console.error("Error:", error);
-        //                     document.getElementById("soalPreviewContent").innerHTML =
-        //                         "<p class='text-danger'>Gagal memuat soal.</p>";
-        //                 });
-        //         });
-        //     });
-        // });
-
-        // document.addEventListener("DOMContentLoaded", function() {
-        //     document.querySelectorAll(".open-preview-modal").forEach(function(element) {
-        //         element.addEventListener("click", function() {
-        //             let soalId = this.getAttribute("data-id");
-
-        //             fetch(`/guru/bank-soal/preview/${soalId}`)
-        //                 .then(response => response.json())
-        //                 .then(data => {
-        //                     console.log("Data Diterima dari Server:", data); // Debugging
-
-        //                     let previewContainer = document.getElementById(
-        //                         "soalPreviewContent");
-        //                     previewContainer.innerHTML = "";
-
-        //                     if (data.success) {
-        //                         if (data.questions.length === 0) {
-        //                             previewContainer.innerHTML =
-        //                                 `<p class='text-warning'>Soal tidak ditemukan dalam file.</p>`;
-        //                             return;
-        //                         }
-
-        //                         data.questions.forEach((question, index) => {
-        //                             let questionElement = document.createElement("div");
-        //                             questionElement.innerHTML = `
-    //                         <h6><strong>Soal ${index + 1}:</strong> ${question.text}</h6>
-    //                         <ul>
-    //                             ${question.options.map(opt => `<li>${opt}</li>`).join("")}
-    //                         </ul>
-    //                         <p><strong>Jawaban Benar:</strong> ${question.correctAnswer}</p>
-    //                         <hr>
-    //                     `;
-        //                             previewContainer.appendChild(questionElement);
-        //                         });
-
-        //                         let modal = new bootstrap.Modal(document.getElementById(
-        //                             "previewSoalModal"));
-        //                         modal.show();
-        //                     } else {
-        //                         previewContainer.innerHTML =
-        //                             `<p class='text-danger'>${data.message}</p>`;
-        //                     }
-        //                 })
-        //                 .catch(error => {
-        //                     console.error("Error:", error);
-        //                     document.getElementById("soalPreviewContent").innerHTML =
-        //                         "<p class='text-danger'>Gagal memuat soal.</p>";
-        //                 });
-        //         });
-        //     });
-        // });
     </script>
 @endsection
