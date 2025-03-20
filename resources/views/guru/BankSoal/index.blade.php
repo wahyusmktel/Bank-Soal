@@ -28,6 +28,7 @@
                     <th>Mata Pelajaran</th>
                     <th>Kelas</th>
                     <th>File Soal</th>
+                    <th>Validasi Soal</th>
                     <th>Status</th>
                     <th>Aksi</th>
                 </tr>
@@ -51,6 +52,42 @@
                                 {{ basename($soal->file_soal) }}
                             </a>
                         </td>
+                        <td>
+                            @php
+                                // Ambil data validasi soal
+                                $validasi = \App\Models\ValidasiSoal::where('bank_soals_id', $soal->id)->first();
+                                $soalData = $validasi ? json_decode($validasi->soal, true) : [];
+
+                                // Coba ambil total soal dari parsed_soal (jika tersimpan dalam database)
+                                $totalSoal = !empty($soal->parsed_soal)
+                                    ? count(json_decode($soal->parsed_soal, true))
+                                    : 0;
+
+                                // Jika parsed_soal kosong, coba hitung dari jumlah soal di validasi
+                                if ($totalSoal == 0 && !empty($soalData)) {
+                                    $totalSoal = count($soalData);
+                                }
+
+                                // Hitung jumlah soal yang sudah divalidasi (hanya yang memiliki keterangan_validasi = true)
+                                $totalValidasi = !empty($soalData)
+                                    ? count(
+                                        array_filter($soalData, function ($s) {
+                                            return isset($s['keterangan_validasi']) &&
+                                                $s['keterangan_validasi'] == true;
+                                        }),
+                                    )
+                                    : 0;
+                            @endphp
+
+                            <span
+                                class="badge {{ $totalValidasi === $totalSoal && $totalSoal > 0 ? 'bg-success' : 'bg-danger' }}">
+                                {{ $totalValidasi }}/{{ $totalSoal }}
+                            </span>
+                            <br>
+                            <small>Jumlah Validasi / Jumlah Soal</small>
+                        </td>
+
+
                         <td>
                             <span class="badge {{ $soal->status ? 'bg-success' : 'bg-danger' }}">
                                 {{ $soal->status ? 'Active' : 'Inactive' }}
