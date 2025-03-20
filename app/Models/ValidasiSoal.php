@@ -19,7 +19,7 @@ class ValidasiSoal extends Model
     protected $fillable = ['id', 'guru_id', 'bank_soals_id', 'soal', 'status'];
 
     protected $casts = [
-        'soal' => AsArrayObject::class, // Menggunakan JSON cast
+        'soal' => 'array',
         'status' => 'boolean',
     ];
 

@@ -258,6 +258,20 @@ class GuruBankSoalController extends Controller
                 // Parsing file XML
                 $questions = $this->parseBlackboardXML($datContent, $id);
 
+                // Ambil validasi soal dari database
+                $validasi = ValidasiSoal::where('bank_soals_id', $id)->first();
+                $soalData = $validasi ? json_decode($validasi->soal, true) : [];
+
+                // Loop untuk menambahkan status validasi ke setiap soal
+                foreach ($questions as $index => $question) {
+                    $nomorSoal = $index + 1;
+
+                    // Cek apakah soal ini sudah divalidasi
+                    $questions[$index]['keterangan_validasi'] = isset($soalData[$nomorSoal]) && is_array($soalData[$nomorSoal])
+                        ? (bool) ($soalData[$nomorSoal]['keterangan_validasi'] ?? false)
+                        : false;
+                }
+
                 return response()->json([
                     'success' => true,
                     'questions' => $questions,
@@ -401,16 +415,29 @@ class GuruBankSoalController extends Controller
         $validasi = ValidasiSoal::where('bank_soals_id', $bank_soals_id)->first();
 
         if ($validasi) {
-            // Jika sudah ada, update data soal dalam JSON
-            $soalData = $validasi->soal;
-            $soalData[$nomor_soal] = ['nomor_soal' => $nomor_soal, 'keterangan_validasi' => $keterangan_validasi];
-            $validasi->update(['soal' => $soalData]);
+            // Decode JSON soal jika berbentuk string, pastikan selalu array
+            $soalData = is_string($validasi->soal) ? json_decode($validasi->soal, true) : $validasi->soal;
+
+            if (!is_array($soalData)) {
+                $soalData = []; // Jika tidak berbentuk array, set array kosong
+            }
+
+            // Update atau tambahkan nomor soal yang tervalidasi
+            $soalData[$nomor_soal] = [
+                'nomor_soal' => $nomor_soal,
+                'keterangan_validasi' => $keterangan_validasi,
+            ];
+
+            // Simpan perubahan dengan encoding ke JSON
+            $validasi->update(['soal' => json_encode($soalData)]);
         } else {
-            // Jika belum ada, buat data baru
+            // Jika belum ada validasi, buat baru dengan JSON yang benar
             ValidasiSoal::create([
                 'guru_id' => $guru_id,
                 'bank_soals_id' => $bank_soals_id,
-                'soal' => json_encode([$nomor_soal => ['nomor_soal' => $nomor_soal, 'keterangan_validasi' => $keterangan_validasi]]),
+                'soal' => json_encode([
+                    $nomor_soal => ['nomor_soal' => $nomor_soal, 'keterangan_validasi' => $keterangan_validasi]
+                ]),
                 'status' => true
             ]);
         }
