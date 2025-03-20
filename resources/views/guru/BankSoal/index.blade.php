@@ -357,6 +357,8 @@
                 <!-- **Footer dengan Tombol Prev & Next** -->
                 <div class="modal-footer d-flex justify-content-between">
                     <button class="btn btn-secondary prev-btn">Previous</button>
+                    <input type="checkbox" id="validasiSoalCheckbox" class="form-check-input">
+                    <label for="validasiSoalCheckbox" class="form-check-label">Tandai sebagai valid</label>
                     <button class="btn btn-primary next-btn">Next</button>
                 </div>
             </div>
@@ -485,6 +487,17 @@
                                 "soalPreviewContent");
                             let paginationContainer = document.getElementById(
                                 "paginationContainer");
+                            let validasiCheckbox = document.getElementById(
+                                "validasiSoalCheckbox");
+
+                            if (!previewContainer || !paginationContainer || !
+                                validasiCheckbox) {
+                                console.error(
+                                    "Elemen DOM tidak ditemukan! Periksa struktur HTML Anda."
+                                );
+                                return;
+                            }
+
                             previewContainer.innerHTML = "";
                             paginationContainer.innerHTML = "";
 
@@ -499,6 +512,7 @@
                                 let totalQuestions = data.questions.length;
                                 let perRow = 4; // Jumlah soal per baris dalam pagination
 
+                                // **✅ Fungsi untuk menampilkan soal berdasarkan index**
                                 function showQuestion(index) {
                                     if (index < 0 || index >= totalQuestions)
                                         return; // Cegah index out of range
@@ -510,9 +524,15 @@
                                 <ul>${question.options.map(opt => `<li>${opt}</li>`).join("")}</ul>
                                 <p><strong>Jawaban Benar:</strong> ${question.correctAnswer}</p>
                             `;
+
+                                    // Update status checkbox
+                                    validasiCheckbox.checked = question.keterangan_validasi ||
+                                        false;
+
                                     updatePagination();
                                 }
 
+                                // **✅ Fungsi untuk memperbarui pagination**
                                 function updatePagination() {
                                     let paginationHTML = "<div class='row'>";
                                     for (let i = 0; i < totalQuestions; i++) {
@@ -529,7 +549,7 @@
                                     paginationHTML += "</div>";
                                     paginationContainer.innerHTML = paginationHTML;
 
-                                    // Tambahkan event listener ke tombol nomor soal
+                                    // **Event listener ke tombol nomor soal**
                                     document.querySelectorAll(".page-btn").forEach(item => {
                                         item.addEventListener("click", function() {
                                             let newIndex = parseInt(this
@@ -541,25 +561,60 @@
                                     });
                                 }
 
-                                // Event listener untuk tombol prev dan next
-                                document.querySelector(".prev-btn").addEventListener("click",
-                                    function() {
-                                        if (currentPage > 0) {
-                                            showQuestion(currentPage - 1);
-                                        }
-                                    });
+                                // **✅ Event listener untuk tombol prev dan next**
+                                document.querySelector(".prev-btn").onclick = function() {
+                                    if (currentPage > 0) {
+                                        showQuestion(currentPage - 1);
+                                    }
+                                };
 
-                                document.querySelector(".next-btn").addEventListener("click",
-                                    function() {
-                                        if (currentPage < totalQuestions - 1) {
-                                            showQuestion(currentPage + 1);
-                                        }
-                                    });
+                                document.querySelector(".next-btn").onclick = function() {
+                                    if (currentPage < totalQuestions - 1) {
+                                        showQuestion(currentPage + 1);
+                                    }
+                                };
 
-                                // Tampilkan soal pertama kali
+                                // **✅ Event listener untuk checkbox validasi**
+                                validasiCheckbox.onchange = function() {
+                                    let csrfToken = document.querySelector(
+                                        'meta[name="csrf-token"]').getAttribute(
+                                        'content'); // Ambil CSRF token dari meta tag
+
+                                    fetch('/guru/bank-soal/validasi', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'X-CSRF-TOKEN': csrfToken // Kirim CSRF token di header
+                                            },
+                                            body: JSON.stringify({
+                                                bank_soals_id: soalId,
+                                                nomor_soal: currentPage + 1,
+                                                keterangan_validasi: validasiCheckbox
+                                                    .checked
+                                            })
+                                        })
+                                        .then(res => {
+                                            if (!res.ok) {
+                                                throw new Error(
+                                                    `HTTP error! Status: ${res.status}`
+                                                );
+                                            }
+                                            return res.json();
+                                        })
+                                        .then(response => {
+                                            console.log("Validasi berhasil disimpan:",
+                                                response.message);
+                                        })
+                                        .catch(error => {
+                                            console.error("Gagal menyimpan validasi:",
+                                                error);
+                                        });
+                                };
+
+                                // **✅ Tampilkan soal pertama kali**
                                 showQuestion(currentPage);
 
-                                // Tampilkan modal
+                                // **✅ Tampilkan modal**
                                 let modal = new bootstrap.Modal(document.getElementById(
                                     "previewSoalModal"));
                                 modal.show();

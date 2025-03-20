@@ -72,5 +72,6 @@ Route::prefix('guru')->name('guru.')->group(function () {
         Route::post('/bank-soal', [GuruBankSoalController::class, 'store'])->name('bank-soal.store');
         Route::get('/bank-soal/lihat-zip/{id}', [GuruBankSoalController::class, 'lihatZip']);
         Route::get('/bank-soal/preview/{id}', [GuruBankSoalController::class, 'previewSoal']);
+        Route::post('/bank-soal/validasi', [GuruBankSoalController::class, 'simpanValidasiSoal'])->name('validasi.soal');
     });
 });

@@ -9,6 +9,7 @@ use App\Models\DataUjian;
 use App\Models\Kelas;
 use App\Models\MapingMapel;
 use App\Models\MataPelajaran;
+use App\Models\ValidasiSoal;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
@@ -381,5 +382,39 @@ class GuruBankSoalController extends Controller
         }
 
         rmdir($dir);
+    }
+
+    public function simpanValidasiSoal(Request $request)
+    {
+        $request->validate([
+            'bank_soals_id' => 'required|uuid',
+            'nomor_soal' => 'required|integer',
+            'keterangan_validasi' => 'required|boolean',
+        ]);
+
+        $guru_id = Auth::guard('guru')->user()->guru_id; // Ambil ID Guru yang login
+        $bank_soals_id = $request->bank_soals_id;
+        $nomor_soal = $request->nomor_soal;
+        $keterangan_validasi = $request->keterangan_validasi;
+
+        // Cek apakah sudah ada data validasi untuk bank soal ini
+        $validasi = ValidasiSoal::where('bank_soals_id', $bank_soals_id)->first();
+
+        if ($validasi) {
+            // Jika sudah ada, update data soal dalam JSON
+            $soalData = $validasi->soal;
+            $soalData[$nomor_soal] = ['nomor_soal' => $nomor_soal, 'keterangan_validasi' => $keterangan_validasi];
+            $validasi->update(['soal' => $soalData]);
+        } else {
+            // Jika belum ada, buat data baru
+            ValidasiSoal::create([
+                'guru_id' => $guru_id,
+                'bank_soals_id' => $bank_soals_id,
+                'soal' => json_encode([$nomor_soal => ['nomor_soal' => $nomor_soal, 'keterangan_validasi' => $keterangan_validasi]]),
+                'status' => true
+            ]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Validasi soal berhasil disimpan!']);
     }
 }
