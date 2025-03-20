@@ -283,27 +283,43 @@
     <style>
         .pagination-container {
             display: flex;
-            flex-wrap: wrap;
-            /* 🔹 Membungkus ke baris baru jika penuh */
             justify-content: center;
+            flex-wrap: wrap;
             max-width: 100%;
             overflow: hidden;
-            /* 🔹 Menghindari overflow */
             padding: 10px;
+        }
+
+        .pagination-vertical {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            /* 🔹 Menampilkan 2 kolom */
             gap: 5px;
+            list-style: none;
+            padding: 0;
         }
 
-        .pagination .page-item {
-            flex: 0 1 auto;
-            /* 🔹 Membuat item tidak memanjang */
+        .pagination-vertical .page-item {
+            text-align: center;
+            margin: 2px;
         }
 
-        .pagination .page-item a {
-            min-width: 40px;
-            /* 🔹 Ukuran tombol yang seragam */
+        .pagination-vertical .page-item a {
+            display: block;
+            width: 40px;
+            /* 🔹 Lebar tombol yang seragam */
             text-align: center;
             padding: 8px;
             border-radius: 5px;
+            background-color: #f1f1f1;
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .pagination-vertical .page-item.active a {
+            background-color: #6c5ce7;
+            color: white;
         }
     </style>
 
@@ -317,30 +333,31 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div id="soalPreviewContent">
-                        <p class="text-muted">Memuat soal...</p>
+                    <div class="row">
+                        <!-- **Kolom Konten Soal** -->
+                        <div class="col-md-8">
+                            <div id="soalPreviewContent">
+                                <p class="text-muted">Memuat soal...</p>
+                            </div>
+                        </div>
+
+                        <!-- **Kolom Paginasi Vertikal** -->
+                        <div class="col-md-4">
+                            <div class="pagination-container">
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination pagination-vertical" id="paginationContainer">
+                                        <!-- **Nomor soal akan di-generate via JavaScript** -->
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    {{-- <div class="col-lg-12">
-                        <div class="demo-inline-spacing">
-                            <nav aria-label="Page navigation">
-                                <ul class="pagination pagination-rounded justify-content-center">
-                                    <!-- Pagination akan diisi oleh JavaScript -->
-                                </ul>
-                            </nav>
-                        </div>
-                    </div> --}}
-                    <div class="col-lg-12">
-                        <div class="pagination-container">
-                            <nav aria-label="Page navigation">
-                                <ul class="pagination pagination-rounded justify-content-center" id="paginationContainer">
-                                    <!-- 🔹 Nomor soal akan dimasukkan lewat JavaScript -->
-                                </ul>
-                            </nav>
-                        </div>
-                    </div>
 
+                <!-- **Footer dengan Tombol Prev & Next** -->
+                <div class="modal-footer d-flex justify-content-between">
+                    <button class="btn btn-secondary prev-btn">Previous</button>
+                    <button class="btn btn-primary next-btn">Next</button>
                 </div>
             </div>
         </div>
@@ -462,11 +479,12 @@
                     fetch(`/guru/bank-soal/preview/${soalId}`)
                         .then(response => response.json())
                         .then(data => {
-                            console.log("Data Diterima dari Server:", data); // Debugging
+                            console.log("Data Diterima dari Server:", data);
 
                             let previewContainer = document.getElementById(
                                 "soalPreviewContent");
-                            let paginationContainer = document.querySelector(".pagination");
+                            let paginationContainer = document.getElementById(
+                                "paginationContainer");
                             previewContainer.innerHTML = "";
                             paginationContainer.innerHTML = "";
 
@@ -479,72 +497,64 @@
 
                                 let currentPage = 0; // Mulai dari soal pertama
                                 let totalQuestions = data.questions.length;
+                                let perRow = 4; // Jumlah soal per baris dalam pagination
 
                                 function showQuestion(index) {
+                                    if (index < 0 || index >= totalQuestions)
+                                        return; // Cegah index out of range
+                                    currentPage = index; // Update soal saat ini
+
                                     let question = data.questions[index];
                                     previewContainer.innerHTML = `
                                 <h6><strong>Soal ${index + 1}:</strong> ${question.text}</h6>
-                                <ul>
-                                    ${question.options.map(opt => `<li>${opt}</li>`).join("")}
-                                </ul>
+                                <ul>${question.options.map(opt => `<li>${opt}</li>`).join("")}</ul>
                                 <p><strong>Jawaban Benar:</strong> ${question.correctAnswer}</p>
                             `;
-                                    updatePagination(index);
+                                    updatePagination();
                                 }
 
-                                function updatePagination(currentIndex) {
-                                    let paginationHTML = `
-        <li class="page-item prev ${currentIndex === 0 ? 'disabled' : ''}">
-            <a class="page-link prev-btn" href="javascript:void(0);"><i class="icon-base ti tabler-chevrons-left icon-sm"></i></a>
-        </li>
-    `;
-
+                                function updatePagination() {
+                                    let paginationHTML = "<div class='row'>";
                                     for (let i = 0; i < totalQuestions; i++) {
+                                        if (i % perRow === 0) paginationHTML +=
+                                            `<div class='col-12 d-flex justify-content-center'>`;
                                         paginationHTML += `
-            <li class="page-item ${i === currentIndex ? 'active' : ''}">
-                <a class="page-link page-btn" href="javascript:void(0);" data-index="${i}">${i + 1}</a>
-            </li>
-        `;
+                                    <li class="page-item ${i === currentPage ? 'active' : ''}">
+                                        <a class="page-link page-btn" href="javascript:void(0);" data-index="${i}">${i + 1}</a>
+                                    </li>
+                                `;
+                                        if ((i + 1) % perRow === 0 || i === totalQuestions - 1)
+                                            paginationHTML += `</div>`;
                                     }
-
-                                    paginationHTML += `
-        <li class="page-item next ${currentIndex === totalQuestions - 1 ? 'disabled' : ''}">
-            <a class="page-link next-btn" href="javascript:void(0);"><i class="icon-base ti tabler-chevrons-right icon-sm"></i></a>
-        </li>
-    `;
-
+                                    paginationHTML += "</div>";
                                     paginationContainer.innerHTML = paginationHTML;
 
-                                    // Tambahkan event listener untuk tombol nomor soal
-                                    document.querySelectorAll(".pagination .page-btn").forEach(
-                                        item => {
-                                            item.addEventListener("click", function() {
-                                                let newIndex = parseInt(this
-                                                    .getAttribute("data-index"));
-                                                if (!isNaN(newIndex)) {
-                                                    currentPage = newIndex;
-                                                    showQuestion(currentPage);
-                                                }
-                                            });
-                                        });
-
-                                    // Event listener untuk tombol prev dan next
-                                    document.querySelector(".pagination .prev-btn")
-                                        .addEventListener("click", function() {
-                                            if (currentPage > 0) {
-                                                currentPage--;
-                                                showQuestion(currentPage);
+                                    // Tambahkan event listener ke tombol nomor soal
+                                    document.querySelectorAll(".page-btn").forEach(item => {
+                                        item.addEventListener("click", function() {
+                                            let newIndex = parseInt(this
+                                                .getAttribute("data-index"));
+                                            if (!isNaN(newIndex)) {
+                                                showQuestion(newIndex);
                                             }
                                         });
-
-                                    document.querySelector(".pagination .next-btn")
-                                        .addEventListener("click", function() {
-                                            if (currentPage < totalQuestions - 1) {
-                                                currentPage++;
-                                                showQuestion(currentPage);
-                                            }
-                                        });
+                                    });
                                 }
+
+                                // Event listener untuk tombol prev dan next
+                                document.querySelector(".prev-btn").addEventListener("click",
+                                    function() {
+                                        if (currentPage > 0) {
+                                            showQuestion(currentPage - 1);
+                                        }
+                                    });
+
+                                document.querySelector(".next-btn").addEventListener("click",
+                                    function() {
+                                        if (currentPage < totalQuestions - 1) {
+                                            showQuestion(currentPage + 1);
+                                        }
+                                    });
 
                                 // Tampilkan soal pertama kali
                                 showQuestion(currentPage);
