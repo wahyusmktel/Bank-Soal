@@ -3,7 +3,6 @@
 @section('title', 'Bank Soal')
 
 @section('content')
-    <h4 class="py-4 mb-6">Bank Soal</h4>
 
     <!-- Notifikasi -->
     @if (session('success'))
@@ -13,165 +12,133 @@
         <div class="alert alert-danger">{{ session('error') }}</div>
     @endif
 
-    <!-- Tombol Tambah Bank Soal -->
-    <div class="d-flex justify-content-between mb-3">
-        <h5>Daftar Bank Soal</h5>
-        <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBankSoalModal">Tambah Bank Soal</a>
-    </div>
-
-    <!-- Tabel Bank Soal -->
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead class="table-dark">
-                <tr>
-                    <th>No</th>
-                    <th>Mata Pelajaran</th>
-                    <th>Kelas</th>
-                    <th>File Soal</th>
-                    <th>Validasi Soal</th>
-                    <th>Status</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($bankSoals as $index => $soal)
-                    @php
-                        $mapelKelasData = json_decode($soal->mata_pelajaran_id, true) ?? [];
-                        $mapelId = $mapelKelasData['mata_pelajaran_id'] ?? null;
-                        $kelasIds = $mapelKelasData['kelas_id'] ?? [];
-
-                        $mapelNama = \App\Models\MataPelajaran::where('id', $mapelId)->value('nama_mapel');
-                        $kelasList = \App\Models\Kelas::whereIn('id', $kelasIds)->pluck('nama_kelas')->toArray();
-                    @endphp
-                    <tr>
-                        <td>{{ ($bankSoals->currentPage() - 1) * $bankSoals->perPage() + $index + 1 }}</td>
-                        <td>{{ $mapelNama ?? 'Unknown Mapel' }}</td>
-                        <td>{{ implode(', ', $kelasList) ?: 'Tidak ada kelas' }}</td>
-                        <td>
-                            <a href="{{ asset('storage/' . $soal->file_soal) }}" target="_blank">
-                                {{ basename($soal->file_soal) }}
-                            </a>
-                        </td>
-                        <td>
-                            @php
-                                // Ambil data validasi soal
-                                $validasi = \App\Models\ValidasiSoal::where('bank_soals_id', $soal->id)->first();
-                                $soalData = $validasi ? json_decode($validasi->soal, true) : [];
-
-                                // Coba ambil total soal dari parsed_soal (jika tersimpan dalam database)
-                                $totalSoal = !empty($soal->parsed_soal)
-                                    ? count(json_decode($soal->parsed_soal, true))
-                                    : 0;
-
-                                // Jika parsed_soal kosong, coba hitung dari jumlah soal di validasi
-                                if ($totalSoal == 0 && !empty($soalData)) {
-                                    $totalSoal = count($soalData);
-                                }
-
-                                // Hitung jumlah soal yang sudah divalidasi (hanya yang memiliki keterangan_validasi = true)
-                                $totalValidasi = !empty($soalData)
-                                    ? count(
-                                        array_filter($soalData, function ($s) {
-                                            return isset($s['keterangan_validasi']) &&
-                                                $s['keterangan_validasi'] == true;
-                                        }),
-                                    )
-                                    : 0;
-                            @endphp
-
-                            <span
-                                class="badge {{ $totalValidasi === $totalSoal && $totalSoal > 0 ? 'bg-success' : 'bg-danger' }}">
-                                {{ $totalValidasi }}/{{ $totalSoal }}
-                            </span>
-                            <br>
-                            <small>Jumlah Validasi / Jumlah Soal</small>
-                        </td>
-
-
-                        <td>
-                            <span class="badge {{ $soal->status ? 'bg-success' : 'bg-danger' }}">
-                                {{ $soal->status ? 'Active' : 'Inactive' }}
-                            </span>
-                        </td>
-                        <td>
-                            <button type="button" class="btn btn-sm btn-primary open-zip-modal"
-                                data-id="{{ $soal->id }}">
-                                Lihat Soal
-                            </button>
-                            <button type="button" class="btn btn-sm btn-warning open-preview-modal"
-                                data-id="{{ $soal->id }}">
-                                Preview Soal
-                            </button>
-                        </td>
-
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="6" class="text-center">Tidak ada bank soal.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Pagination -->
-    <div class="d-flex justify-content-center mt-3">
-        {{ $bankSoals->links('vendor.pagination.bootstrap-4') }}
-    </div>
-
-    <!-- Modal Tambah Bank Soal -->
-    {{-- <div class="modal fade" id="addBankSoalModal" data-bs-backdrop="static" tabindex="-1"
-        aria-labelledby="addBankSoalModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addBankSoalModalLabel">Tambah Bank Soal</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form action="{{ route('guru.bank-soal.store') }}" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    <div class="modal-body">
-                        <!-- Pilihan Mata Pelajaran -->
-                        <div class="mb-3">
-                            <label class="form-label">Pilih Mata Pelajaran</label>
-                            <select class="form-control" name="mata_pelajaran_id" required>
-                                <option value="">-- Pilih Mata Pelajaran --</option>
-                                @foreach ($mapingMapels as $maping)
-                                    @foreach ($maping->mapel_kelas_list as $data)
-                                        <option value="{{ $data['mata_pelajaran_id'] }}">{{ $data['mapel'] }}</option>
-                                    @endforeach
-                                @endforeach
-                            </select>
-
-                        </div>
-
-                        <!-- Pilihan Kelas (Multiple Select) -->
-                        <div class="mb-3">
-                            <label class="form-label">Pilih Kelas</label>
-                            <select class="form-control select2" name="kelas_id[]" multiple="multiple" required>
-                                @foreach ($kelas as $item)
-                                    <option value="{{ $item->id }}">{{ $item->nama_kelas }}</option>
-                                @endforeach
-                            </select>
-                            <small class="text-muted">Bisa memilih lebih dari satu kelas</small>
-                        </div>
-
-                        <!-- Upload File Soal -->
-                        <div class="mb-3">
-                            <label class="form-label">Upload File Soal</label>
-                            <input type="file" class="form-control" name="file_soal" accept=".zip" required>
-                            <small class="text-muted">Format file: .zip (Max: 5MB)</small>
-                        </div>
-                    </div>
-
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-primary">Simpan</button>
-                    </div>
-                </form>
-            </div>
+    <div class="card mt-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-header mb-0">Daftar Bank Soal</h5>
+            <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBankSoalModal">Tambah Bank
+                Soal</a>
         </div>
-    </div> --}}
+    </div>
+
+    <div class="card-body">
+        <div class="table-responsive text-nowrap">
+            <!-- Tabel Bank Soal -->
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>No</th>
+                        <th>Mata Pelajaran</th>
+                        <th>Kelas</th>
+                        <th>File Soal</th>
+                        <th>Validasi Soal</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($bankSoals as $index => $soal)
+                        @php
+                            $mapelKelasData = json_decode($soal->mata_pelajaran_id, true) ?? [];
+                            $mapelId = $mapelKelasData['mata_pelajaran_id'] ?? null;
+                            $kelasIds = $mapelKelasData['kelas_id'] ?? [];
+
+                            $mapelNama = \App\Models\MataPelajaran::where('id', $mapelId)->value('nama_mapel');
+                            $kelasList = \App\Models\Kelas::whereIn('id', $kelasIds)->pluck('nama_kelas')->toArray();
+                        @endphp
+                        <tr>
+                            <td>{{ ($bankSoals->currentPage() - 1) * $bankSoals->perPage() + $index + 1 }}</td>
+                            <td>{{ $mapelNama ?? 'Unknown Mapel' }}</td>
+                            <td>{{ implode(', ', $kelasList) ?: 'Tidak ada kelas' }}</td>
+                            <td>
+                                <a href="{{ asset('storage/' . $soal->file_soal) }}" target="_blank">
+                                    {{ basename($soal->file_soal) }}
+                                </a>
+                            </td>
+                            <td>
+                                @php
+                                    // Ambil data validasi soal
+                                    $validasi = \App\Models\ValidasiSoal::where('bank_soals_id', $soal->id)->first();
+                                    $soalData = $validasi ? json_decode($validasi->soal, true) : [];
+
+                                    // Coba ambil total soal dari parsed_soal (jika tersimpan dalam database)
+                                    $totalSoal = !empty($soal->parsed_soal)
+                                        ? count(json_decode($soal->parsed_soal, true))
+                                        : 0;
+
+                                    // Jika parsed_soal kosong, coba hitung dari jumlah soal di validasi
+                                    if ($totalSoal == 0 && !empty($soalData)) {
+                                        $totalSoal = count($soalData);
+                                    }
+
+                                    // Hitung jumlah soal yang sudah divalidasi (hanya yang memiliki keterangan_validasi = true)
+                                    $totalValidasi = !empty($soalData)
+                                        ? count(
+                                            array_filter($soalData, function ($s) {
+                                                return isset($s['keterangan_validasi']) &&
+                                                    $s['keterangan_validasi'] == true;
+                                            }),
+                                        )
+                                        : 0;
+                                @endphp
+
+                                <span
+                                    class="badge {{ $totalValidasi === $totalSoal && $totalSoal > 0 ? 'bg-success' : 'bg-danger' }}">
+                                    {{ $totalValidasi }}/{{ $totalSoal }}
+                                </span>
+                                <br>
+                                <small>Jumlah Validasi / Jumlah Soal</small>
+                            </td>
+
+
+                            <td>
+                                <span class="badge {{ $soal->status ? 'bg-success' : 'bg-danger' }}">
+                                    {{ $soal->status ? 'Active' : 'Inactive' }}
+                                </span>
+                            </td>
+                            {{-- <td>
+                                <button type="button" class="btn btn-sm btn-primary open-zip-modal"
+                                    data-id="{{ $soal->id }}">
+                                    Lihat Soal
+                                </button>
+                                <button type="button" class="btn btn-sm btn-warning open-preview-modal"
+                                    data-id="{{ $soal->id }}">
+                                    Preview Soal
+                                </button>
+                            </td> --}}
+                            <td>
+                                <div class="dropdown">
+                                    <button type="button" class="btn p-0 dropdown-toggle hide-arrow"
+                                        data-bs-toggle="dropdown">
+                                        <i class="icon-base ti tabler-dots-vertical"></i>
+                                    </button>
+                                    <div class="dropdown-menu">
+                                        <button type="button" class="dropdown-item open-zip-modal"
+                                            data-id="{{ $soal->id }}">
+                                            <i class="icon-base ti tabler-folder me-1"></i> Lihat File Zip
+                                        </button>
+                                        <button type="button" class="dropdown-item open-preview-modal"
+                                            data-id="{{ $soal->id }}">
+                                            <i class="icon-base ti tabler-eye me-1"></i> Preview Soal
+                                        </button>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="text-center">Tidak ada bank soal.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer">
+        <!-- Pagination -->
+        <div class="d-flex justify-content-center">
+            {{ $bankSoals->links('vendor.pagination.bootstrap-4') }}
+        </div>
+    </div>
 
     <!-- Modal Tambah Bank Soal -->
     <div class="modal fade" id="addBankSoalModal" data-bs-backdrop="static" tabindex="-1"
@@ -302,7 +269,8 @@
     </script>
 
     <!-- Modal untuk menampilkan isi ZIP dalam struktur folder -->
-    <div class="modal fade" id="zipContentModal" tabindex="-1" aria-labelledby="zipContentModalLabel" aria-hidden="true">
+    <div class="modal fade" id="zipContentModal" tabindex="-1" aria-labelledby="zipContentModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
@@ -406,58 +374,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Modal untuk Preview Soal Fix-->
-    {{-- <div class="modal fade" id="previewSoalModal" data-bs-backdrop="static" tabindex="-1"
-        aria-labelledby="previewSoalModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="previewSoalModalLabel">Preview Soal</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="soalPreviewContent">
-                        <p class="text-muted">Memuat soal...</p>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <div class="col-lg-12">
-                        <div class="demo-inline-spacing">
-                            <nav aria-label="Page navigation">
-                                <ul class="pagination pagination-rounded justify-content-center">
-                                    <li class="page-item prev">
-                                        <a class="page-link" href="javascript:void(0);"><i
-                                                class="icon-base ti tabler-chevrons-left icon-sm"></i></a>
-                                    </li>
-                                    <li class="page-item">
-                                        <a class="page-link" href="javascript:void(0);">1</a>
-                                    </li>
-                                    <li class="page-item">
-                                        <a class="page-link" href="javascript:void(0);">2</a>
-                                    </li>
-                                    <li class="page-item active">
-                                        <a class="page-link" href="javascript:void(0);">3</a>
-                                    </li>
-                                    <li class="page-item">
-                                        <a class="page-link" href="javascript:void(0);">4</a>
-                                    </li>
-                                    <li class="page-item">
-                                        <a class="page-link" href="javascript:void(0);">5</a>
-                                    </li>
-                                    <li class="page-item next">
-                                        <a class="page-link" href="javascript:void(0);"><i
-                                                class="icon-base ti tabler-chevrons-right icon-sm"></i></a>
-                                    </li>
-                                </ul>
-                            </nav>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div> --}}
-
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
