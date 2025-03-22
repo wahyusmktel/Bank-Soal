@@ -39,6 +39,53 @@
                 </li>
             </ul>
         </li>
-    </ul>
 
+        <!-- Mata Pelajaran -->
+        <li class="menu-item {{ request()->is('admin/mata-pelajaran*') ? 'active open' : '' }}">
+            <a href="{{ route('admin.mata-pelajaran.index') }}" class="menu-link">
+                <i class="menu-icon icon-base ti tabler-book"></i>
+                <div>Mata Pelajaran</div>
+            </a>
+        </li>
+
+        <!-- Tahun Pelajaran -->
+        <li class="menu-item {{ request()->is('admin/tahun-pelajaran*') ? 'active open' : '' }}">
+            <a href="{{ route('admin.tahun-pelajaran.index') }}" class="menu-link">
+                <i class="menu-icon icon-base ti tabler-calendar"></i>
+                <div>Tahun Pelajaran</div>
+            </a>
+        </li>
+
+        <!-- Data Ujian -->
+        <li class="menu-item {{ request()->is('admin/data-ujian*') ? 'active open' : '' }}">
+            <a href="{{ route('admin.data-ujian.index') }}" class="menu-link">
+                <i class="menu-icon icon-base ti tabler-file-text"></i>
+                <div>Data Ujian</div>
+            </a>
+        </li>
+
+        <!-- Maping Mapel -->
+        <li class="menu-item {{ request()->is('admin/maping-mapel*') ? 'active open' : '' }}">
+            <a href="{{ route('admin.maping.index') }}" class="menu-link">
+                <i class="menu-icon icon-base ti tabler-map"></i>
+                <div>Maping Mapel</div>
+            </a>
+        </li>
+
+        <!-- Kelas -->
+        <li class="menu-item {{ request()->is('admin/kelas*') ? 'active open' : '' }}">
+            <a href="{{ route('admin.kelas.index') }}" class="menu-link">
+                <i class="menu-icon icon-base ti tabler-school"></i>
+                <div>Kelas</div>
+            </a>
+        </li>
+
+        <!-- Bank Soal -->
+        <li class="menu-item {{ request()->is('admin/bank-soal*') ? 'active open' : '' }}">
+            <a href="{{ route('admin.bank-soal.index') }}" class="menu-link">
+                <i class="menu-icon icon-base ti tabler-archive"></i>
+                <div>Bank Soal</div>
+            </a>
+        </li>
+    </ul>
 </aside>

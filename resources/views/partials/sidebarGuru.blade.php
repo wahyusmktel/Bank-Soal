@@ -25,20 +25,19 @@
             </a>
         </li>
 
-        <!-- Kepegawaian -->
-        {{-- <li class="menu-item {{ request()->is('admin/guru*') ? 'active open' : '' }}">
+        <!-- Bank Soal -->
+        <li class="menu-item {{ request()->is('guru/bank-soal*') ? 'active open' : '' }}">
             <a href="javascript:void(0)" class="menu-link menu-toggle">
-                <i class="menu-icon icon-base ti tabler-id"></i>
-                <div>Kepegawaian</div>
+                <i class="menu-icon icon-base ti tabler-archive"></i>
+                <div>Bank Soal</div>
             </a>
             <ul class="menu-sub">
-                <li class="menu-item {{ request()->routeIs('admin.guru.index') ? 'active' : '' }}">
-                    <a href="{{ route('admin.guru.index') }}" class="menu-link">
-                        <div>Data Guru</div>
+                <li class="menu-item {{ request()->routeIs('guru.bank-soal.index') ? 'active' : '' }}">
+                    <a href="{{ route('guru.bank-soal.index') }}" class="menu-link">
+                        <div>Daftar Bank Soal</div>
                     </a>
                 </li>
             </ul>
-        </li> --}}
+        </li>
     </ul>
-
 </aside>
