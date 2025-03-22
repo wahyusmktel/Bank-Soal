@@ -99,7 +99,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center">Tidak ada bank soal.</td>
+                            <td colspan="8" class="text-center">Tidak ada bank soal.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -133,9 +133,17 @@
                                 <option value="">-- Pilih Mata Pelajaran --</option>
                                 @foreach ($mapingMapels as $maping)
                                     @foreach ($maping->mapel_kelas_list as $data)
-                                        <option value="{{ $data['mata_pelajaran_id'] }}"
+                                        {{-- <option value="{{ $data['mata_pelajaran_id'] }}"
                                             data-kelas="{{ json_encode($data['kelas']) }}">
                                             {{ $data['mapel'] }}
+                                        </option> --}}
+                                        @php
+                                            $kelasText = collect($data['kelas'])->pluck('nama')->implode(', ');
+                                        @endphp
+                                        <option value="{{ $data['mata_pelajaran_id'] }}"
+                                            data-kelas="{{ json_encode($data['kelas']) }}"
+                                            data-guru="{{ $maping->guru_id }}">
+                                            {{ $data['mapel'] }} - {{ $kelasText }}
                                         </option>
                                     @endforeach
                                 @endforeach

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BankSoal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -45,26 +46,44 @@ class GuruDashboardController extends Controller
             // Paginasi (10 data per halaman)
             $mapingMapels = $mapingMapels->paginate(10);
 
-            // Optimasi data sebelum dikirim ke view
-            $mapingMapels->getCollection()->transform(function ($maping) {
-                $mapelKelasData = json_decode($maping->mata_pelajaran_id, true);
-                if (!is_array($mapelKelasData)) {
-                    $mapelKelasData = [];
-                }
+            // Ambil semua bank soal milik guru yang sedang login dan ujian aktif
+            $bankSoalGuru = BankSoal::where('guru_id', $guruId)
+                ->whereIn('data_ujian_id', $mapingMapels->pluck('data_ujian_id')->unique())
+                ->get();
 
-                // Ambil semua ID mapel dan kelas
+            // Optimasi data sebelum dikirim ke view
+            $mapingMapels->getCollection()->transform(function ($maping) use ($bankSoalGuru) {
+                $mapelKelasData = json_decode($maping->mata_pelajaran_id, true) ?? [];
+
                 $mapelIds = collect($mapelKelasData)->pluck('mata_pelajaran_id')->unique()->toArray();
                 $kelasIds = collect($mapelKelasData)->pluck('kelas_id')->flatten()->unique()->toArray();
 
-                // Query untuk menghindari N+1
                 $mapels = MataPelajaran::whereIn('id', $mapelIds)->pluck('nama_mapel', 'id')->toArray();
                 $kelas = Kelas::whereIn('id', $kelasIds)->pluck('nama_kelas', 'id')->toArray();
 
-                // Proses data untuk tampilan
-                $maping->mapel_kelas_list = collect($mapelKelasData)->map(function ($data) use ($mapels, $kelas) {
+                $maping->mapel_kelas_list = collect($mapelKelasData)->map(function ($data) use ($maping, $mapels, $kelas, $bankSoalGuru) {
+                    $kelasIds = $data['kelas_id'];
+                    $mapelId = $data['mata_pelajaran_id'];
+
+                    // Filter hanya bank soal untuk guru & ujian ini
+                    $bankSoals = $bankSoalGuru->where('data_ujian_id', $maping->data_ujian_id);
+
+                    // Cek apakah ada bank soal yang memiliki mapel dan seluruh kelas
+                    $sudahUpload = $bankSoals->contains(function ($soal) use ($mapelId, $kelasIds) {
+                        $decoded = json_decode($soal->getRawOriginal('mata_pelajaran_id'), true);
+
+                        if (!is_array($decoded)) return false;
+
+                        return (
+                            ($decoded['mata_pelajaran_id'] ?? null) === $mapelId &&
+                            empty(array_diff($kelasIds, $decoded['kelas_id'] ?? []))
+                        );
+                    });
+
                     return [
-                        'mapel' => $mapels[$data['mata_pelajaran_id']] ?? 'Unknown Mapel',
-                        'kelas' => collect($data['kelas_id'])->map(fn($k) => $kelas[$k] ?? 'Unknown Kelas')->implode(', '),
+                        'mapel' => $mapels[$mapelId] ?? 'Unknown Mapel',
+                        'kelas' => collect($kelasIds)->map(fn($k) => $kelas[$k] ?? 'Unknown Kelas')->implode(', '),
+                        'sudah_upload' => $sudahUpload,
                     ];
                 });
 
@@ -82,4 +101,5 @@ class GuruDashboardController extends Controller
             return back()->with('error', 'Terjadi kesalahan saat memuat data.');
         }
     }
+
 }

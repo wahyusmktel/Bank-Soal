@@ -158,6 +158,7 @@ class GuruBankSoalController extends Controller
             BankSoal::create([
                 'id' => \Illuminate\Support\Str::uuid(),
                 'guru_id' => $guruId,
+                'data_ujian_id' => $dataUjian->id,
                 'mata_pelajaran_id' => json_encode($mapelKelasData), // Simpan sebagai JSON
                 'file_soal' => $filePath,
                 'status' => true, // Otomatis aktif

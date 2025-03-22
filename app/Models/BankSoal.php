@@ -18,6 +18,7 @@ class BankSoal extends Model
 
     protected $fillable = [
         'guru_id',
+        'data_ujian_id',
         'mata_pelajaran_id',
         'file_soal',
         'status',

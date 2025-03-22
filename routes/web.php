@@ -54,7 +54,10 @@ Route::prefix('admin')->group(function () {
         Route::post('/kelas/store', [AdminKelasController::class, 'store'])->name('admin.kelas.store');
 
         Route::get('/bank-soal', [AdminBankSoalController::class, 'index'])->name('admin.bank-soal.index');
-        Route::get('/bank-soal/lihat-zip/{id}', [AdminBankSoalController::class, 'lihatZip'])->name('admin.bank-soal.lihat-zip');
+        Route::post('/bank-soal/store', [AdminBankSoalController::class, 'store'])->name('admin.bank-soal.store');
+        Route::get('/bank-soal/preview/{id}', [AdminBankSoalController::class, 'previewSoal'])->name('admin.bank-soal.previewSoal');;
+        Route::get('/bank-soal/lihat-zip/{id}', [AdminBankSoalController::class, 'lihatZip'])->name('admin.bank-soal.lihatZip');;
+        Route::post('/bank-soal/validasi', [AdminBankSoalController::class, 'simpanValidasiSoal'])->name('admin.bank-soal.simpanValidasiSoal');;
 
 
         Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
