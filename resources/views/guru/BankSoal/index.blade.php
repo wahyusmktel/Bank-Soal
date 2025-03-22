@@ -27,12 +27,12 @@
                 <thead class="table-dark">
                     <tr>
                         <th>No</th>
+                        <th>Aksi</th>
+                        <th>Validasi Soal</th>
+                        <th>Status</th>
                         <th>Mata Pelajaran</th>
                         <th>Kelas</th>
                         <th>File Soal</th>
-                        <th>Validasi Soal</th>
-                        <th>Status</th>
-                        <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -47,64 +47,6 @@
                         @endphp
                         <tr>
                             <td>{{ ($bankSoals->currentPage() - 1) * $bankSoals->perPage() + $index + 1 }}</td>
-                            <td>{{ $mapelNama ?? 'Unknown Mapel' }}</td>
-                            <td>{{ implode(', ', $kelasList) ?: 'Tidak ada kelas' }}</td>
-                            <td>
-                                <a href="{{ asset('storage/' . $soal->file_soal) }}" target="_blank">
-                                    {{ basename($soal->file_soal) }}
-                                </a>
-                            </td>
-                            <td>
-                                @php
-                                    // Ambil data validasi soal
-                                    $validasi = \App\Models\ValidasiSoal::where('bank_soals_id', $soal->id)->first();
-                                    $soalData = $validasi ? json_decode($validasi->soal, true) : [];
-
-                                    // Coba ambil total soal dari parsed_soal (jika tersimpan dalam database)
-                                    $totalSoal = !empty($soal->parsed_soal)
-                                        ? count(json_decode($soal->parsed_soal, true))
-                                        : 0;
-
-                                    // Jika parsed_soal kosong, coba hitung dari jumlah soal di validasi
-                                    if ($totalSoal == 0 && !empty($soalData)) {
-                                        $totalSoal = count($soalData);
-                                    }
-
-                                    // Hitung jumlah soal yang sudah divalidasi (hanya yang memiliki keterangan_validasi = true)
-                                    $totalValidasi = !empty($soalData)
-                                        ? count(
-                                            array_filter($soalData, function ($s) {
-                                                return isset($s['keterangan_validasi']) &&
-                                                    $s['keterangan_validasi'] == true;
-                                            }),
-                                        )
-                                        : 0;
-                                @endphp
-
-                                <span
-                                    class="badge {{ $totalValidasi === $totalSoal && $totalSoal > 0 ? 'bg-success' : 'bg-danger' }}">
-                                    {{ $totalValidasi }}/{{ $totalSoal }}
-                                </span>
-                                <br>
-                                <small>Jumlah Validasi / Jumlah Soal</small>
-                            </td>
-
-
-                            <td>
-                                <span class="badge {{ $soal->status ? 'bg-success' : 'bg-danger' }}">
-                                    {{ $soal->status ? 'Active' : 'Inactive' }}
-                                </span>
-                            </td>
-                            {{-- <td>
-                                <button type="button" class="btn btn-sm btn-primary open-zip-modal"
-                                    data-id="{{ $soal->id }}">
-                                    Lihat Soal
-                                </button>
-                                <button type="button" class="btn btn-sm btn-warning open-preview-modal"
-                                    data-id="{{ $soal->id }}">
-                                    Preview Soal
-                                </button>
-                            </td> --}}
                             <td>
                                 <div class="dropdown">
                                     <button type="button" class="btn p-0 dropdown-toggle hide-arrow"
@@ -122,6 +64,37 @@
                                         </button>
                                     </div>
                                 </div>
+                            </td>
+                            <td>
+                                @php
+                                    // Ambil data validasi soal
+                                    $validasi = \App\Models\ValidasiSoal::where('bank_soals_id', $soal->id)->first();
+                                    $soalData = $validasi ? json_decode($validasi->soal, true) : [];
+
+                                    // Hitung jumlah soal yang sudah divalidasi (hanya yang memiliki keterangan_validasi = true)
+                                    $totalValidasi = is_array($soalData)
+                                        ? count(array_filter($soalData, function ($s) {
+                                            return isset($s['keterangan_validasi']) && $s['keterangan_validasi'] == true;
+                                        }))
+                                        : 0;
+                                @endphp
+
+                                <span class="badge {{ $totalValidasi > 0 ? 'bg-success' : 'bg-danger' }}">
+                                    {{ $totalValidasi }}
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="badge {{ $soal->status ? 'bg-success' : 'bg-danger' }}">
+                                    {{ $soal->status ? 'Active' : 'Inactive' }}
+                                </span>
+                            </td>
+                            <td>{{ $mapelNama ?? 'Unknown Mapel' }}</td>
+                            <td>{{ implode(', ', $kelasList) ?: 'Tidak ada kelas' }}</td>
+                            <td>
+                                <a href="{{ asset('storage/' . $soal->file_soal) }}" target="_blank">
+                                    {{ basename($soal->file_soal) }}
+                                </a>
                             </td>
                         </tr>
                     @empty
