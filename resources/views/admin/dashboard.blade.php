@@ -104,6 +104,61 @@
             </div>
         </div>
         <!--/ Statistics -->
+
+        <!-- Source Visit -->
+        <div class="col-xxl-4 col-md-6 col-12">
+            <div class="card h-100">
+              <div class="card-header d-flex justify-content-between">
+                <div class="card-title mb-0">
+                    <h5 class="mb-1">Guru Belum Upload</h5>
+                    <p class="card-subtitle">{{ count($guruBelumUpload) }} Data</p>
+                </div>
+                <div class="dropdown">
+                  <button
+                    class="btn btn-text-secondary rounded-pill text-body-secondary border-0 p-2 me-n1"
+                    type="button"
+                    id="sourceVisits"
+                    data-bs-toggle="dropdown"
+                    aria-haspopup="true"
+                    aria-expanded="false">
+                    <i class="icon-base ti tabler-dots-vertical icon-md text-body-secondary"></i>
+                  </button>
+                  <div class="dropdown-menu dropdown-menu-end" aria-labelledby="sourceVisits">
+                    <a class="dropdown-item" href="javascript:void(0);">Refresh</a>
+                    <a class="dropdown-item" href="javascript:void(0);">Download</a>
+                    <a class="dropdown-item" href="javascript:void(0);">View All</a>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    @forelse ($guruBelumUpload as $data)
+                        <li class="mb-4">
+                            <div class="d-flex align-items-center">
+                                <div class="badge bg-label-secondary text-body p-2 me-4 rounded">
+                                    <i class="icon-base ti tabler-alert-triangle icon-md"></i>
+                                </div>
+                                <div class="d-flex justify-content-between w-100 flex-wrap gap-2">
+                                    <div class="me-2">
+                                        <h6 class="mb-0">{{ $data['nama_guru'] }}</h6>
+                                        <small class="text-body">{{ $data['mapel'] }} - {{ $data['kelas'] }}</small>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <div class="ms-4 badge bg-label-danger">Belum Upload</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                    @empty
+                        <li>
+                            <p class="text-center text-muted">Semua guru telah mengunggah soal 🎉</p>
+                        </li>
+                    @endforelse
+                </ul>
+              </div>
+            </div>
+          </div>
+          <!--/ Source Visit -->
     </div>
 
 @endsection

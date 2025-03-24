@@ -8,6 +8,7 @@ use Illuminate\Support\Collection;
 use App\Models\MapingMapel;
 use App\Models\Guru;
 use App\Models\DataUjian;
+use App\Models\Kelas;
 use App\Models\MataPelajaran;
 use App\Models\TahunPelajaran;
 use App\Models\ValidasiSoal;
@@ -96,7 +97,28 @@ class AdminDashboardController extends Controller
             ->reject(fn($key) => in_array($key, $uploadedKeys))
             ->count();
 
-        
+        $guruBelumUpload = [];
+
+        MapingMapel::with(['guru', 'dataUjian', 'tahunPelajaran'])
+            ->get()
+            ->each(function ($maping) use (&$guruBelumUpload, $uploadedKeys) {
+                $decoded = json_decode($maping->mata_pelajaran_id, true);
+                if (!is_array($decoded)) return;
+
+                foreach ($decoded as $item) {
+                    $kelas = $item['kelas_id'] ?? [];
+                    sort($kelas);
+                    $key = $maping->guru_id . '|' . $maping->data_ujian_id . '|' . $item['mata_pelajaran_id'] . '|' . implode(',', $kelas);
+
+                    if (!in_array($key, $uploadedKeys)) {
+                        $guruBelumUpload[] = [
+                            'nama_guru' => optional($maping->guru)->Nama ?? 'Tidak diketahui',
+                            'mapel' => MataPelajaran::find($item['mata_pelajaran_id'])->nama_mapel ?? 'Unknown Mapel',
+                            'kelas' => Kelas::whereIn('id', $kelas)->pluck('nama_kelas')->implode(', ')
+                        ];
+                    }
+                }
+            });
 
         // Tahun Pelajaran Aktif
         $tahunAktif = TahunPelajaran::where('status', true)->first();
@@ -111,7 +133,8 @@ class AdminDashboardController extends Controller
             'jumlahSudahUpload',
             'jumlahBelumUpload',
             'tahunAktif',
-            'ujianAktif'
+            'ujianAktif',
+            'guruBelumUpload'
         ));
     }
 }
