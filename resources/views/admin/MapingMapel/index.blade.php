@@ -122,7 +122,7 @@
 
 
     {{-- Modal Tambah Data --}}
-    <div class="modal fade" id="addModal" tabindex="-1">
+    <div class="modal fade" id="addModal" data-bs-backdrop="static" tabindex="-1">
         <div class="modal-dialog">
             <form action="{{ route('admin.maping.store') }}" method="POST">
                 @csrf
@@ -143,12 +143,11 @@
                         </div>
                         <div class="mb-2">
                             <label>Data Ujian</label>
-                            <select name="data_ujian_id" class="form-control" required>
-                                <option value="" disabled selected>Pilih Data Ujian</option>
-                                @foreach ($dataUjians as $dataUjian)
-                                    <option value="{{ $dataUjian->id }}">{{ $dataUjian->nama_ujian }}</option>
-                                @endforeach
-                            </select>
+                            <input type="text" class="form-control"
+                                value="{{ $dataUjianAktif ? $dataUjianAktif->nama_ujian : '-' }}"
+                                readonly>
+                            <input type="hidden" name="data_ujian_id" value="{{ $dataUjianAktif->id ?? '' }}">
+                            <small class="text-muted">Data ujian yang ditampilkan adalah ujian yang sedang aktif saat ini.</small>
                         </div>
 
                         <div id="mapel-container">
@@ -189,7 +188,7 @@
         </div>
     </div>
 
-    <div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal fade" id="editModal" data-bs-backdrop="static" tabindex="-1">
         <div class="modal-dialog">
             <form id="editForm" method="POST">
                 @csrf
@@ -213,12 +212,11 @@
                         </div>
                         <div class="mb-2">
                             <label>Data Ujian</label>
-                            <select name="data_ujian_id" id="edit_data_ujian_id" class="form-control" required>
-                                <option value="" disabled selected>Pilih Data Ujian</option>
-                                @foreach ($dataUjians as $dataUjian)
-                                    <option value="{{ $dataUjian->id }}">{{ $dataUjian->nama_ujian }}</option>
-                                @endforeach
-                            </select>
+                            <input type="text" class="form-control" id="edit_data_ujian_nama"
+                                value="{{ $dataUjianAktif ? $dataUjianAktif->nama_ujian : '-' }}" readonly>
+                            <input type="hidden" name="data_ujian_id" id="edit_data_ujian_id"
+                                value="{{ $dataUjianAktif->id ?? '' }}">
+                            <small class="text-muted">Data ujian yang ditampilkan adalah ujian yang sedang aktif saat ini.</small>
                         </div>
 
                         <div id="edit_mapel_container"></div>

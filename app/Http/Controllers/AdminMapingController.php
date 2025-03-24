@@ -17,11 +17,11 @@ class AdminMapingController extends Controller
     {
         $mapings = MapingMapel::with('guru', 'dataUjian.tahunPelajaran')->get();
         $gurus = Guru::all();
-        $dataUjians = DataUjian::with('tahunPelajaran')->get();
+        $dataUjianAktif = DataUjian::with('tahunPelajaran')->where('status', true)->first();
         $mataPelajarans = MataPelajaran::all();
         $kelas = Kelas::all();
 
-        return view('admin.MapingMapel.index', compact('mapings', 'gurus', 'dataUjians', 'mataPelajarans', 'kelas'));
+        return view('admin.MapingMapel.index', compact('mapings', 'gurus', 'dataUjianAktif', 'mataPelajarans', 'kelas'));
     }
 
     public function store(Request $request)
