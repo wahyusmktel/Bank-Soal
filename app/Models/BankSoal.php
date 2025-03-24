@@ -33,4 +33,9 @@ class BankSoal extends Model
     {
         return $this->belongsTo(Guru::class, 'guru_id');
     }
+
+    public function validasi()
+    {
+        return $this->hasOne(ValidasiSoal::class, 'bank_soals_id', 'id');
+    }
 }

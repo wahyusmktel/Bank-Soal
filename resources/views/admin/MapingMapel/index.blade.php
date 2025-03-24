@@ -1,113 +1,125 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="container">
-        <h2>Mapping Mata Pelajaran</h2>
-        <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addModal">Tambah Mapping</button>
+        {{--  --}}
 
         {{-- Tabel Data --}}
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Nama Guru</th>
-                    <th>Data Ujian</th>
-                    <th>Tahun Pelajaran</th> <!-- Tambahan -->
-                    <th>Semester</th> <!-- Tambahan -->
-                    <th>Mata Pelajaran & Kelas</th>
-                    <th>Jumlah Bank Soal</th>
-                    <th>Status</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                @php
-                    $groupedMapings = $mapings->groupBy('guru_id');
-                    $no = 1;
-                @endphp
-
-                @foreach ($groupedMapings as $guru_id => $mapingGroup)
-                    @php
-                        $rowspan = count($mapingGroup);
-                        $first = true;
-                    @endphp
-
-                    @foreach ($mapingGroup as $maping)
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Mapping Mata Pelajaran</h5>
+                <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addModal">Tambah Mapping</button>
+            </div>
+            <div class="table-responsive text-nowrap">
+                <table class="table">
+                    <thead>
                         <tr>
-                            @if ($first)
-                                <td rowspan="{{ $rowspan }}" class="text-start align-top">{{ $no++ }}</td>
-                            @endif
-
-                            @if ($first)
-                                <td rowspan="{{ $rowspan }}" class="text-start align-top">{{ $maping->guru->Nama }}</td>
-                            @endif
-
-                            <td class="text-start align-top">{{ $maping->dataUjian->nama_ujian }}</td>
-                            <td>{{ $maping->dataUjian->tahunPelajaran->nama_tahun ?? '-' }}</td>
-                            <td>{{ $maping->dataUjian->tahunPelajaran->semester ?? '-' }}</td>
-
-                            <td class="text-start align-top">
-                                @php
-                                    $mataPelajaran = json_decode($maping->mata_pelajaran_id, true);
-                                @endphp
-                                @if (!empty($mataPelajaran) && is_array($mataPelajaran))
-                                    @foreach ($mataPelajaran as $mapel)
-                                        @php
-                                            $mapelNama = \App\Models\MataPelajaran::find($mapel['mata_pelajaran_id']);
-                                            $kelasNama = \App\Models\Kelas::whereIn('id', $mapel['kelas_id'])
-                                                ->pluck('nama_kelas')
-                                                ->toArray();
-                                        @endphp
-                                        <strong>{{ $mapelNama->nama_mapel ?? 'Tidak Ditemukan' }}</strong>:
-                                        {{ implode(', ', $kelasNama) }} <br>
-                                    @endforeach
-                                @else
-                                    <span class="text-muted">Belum ada data</span>
-                                @endif
-                            </td>
-
-                            <td class="text-center align-middle">
-                                @php
-                                    // Hitung jumlah mata pelajaran spesifik di baris ini
-                                    $jumlahMapelBaris = count($mataPelajaran ?? []);
-                                @endphp
-                                {{ $jumlahMapelBaris }}
-                            </td>
-
-                            @if ($first)
-                                <td rowspan="{{ $rowspan }}" class="align-middle">
-                                    <span class="badge bg-success">Aktif</span>
-                                </td>
-                            @endif
-
-
-                            <td>
-                                <button class="btn btn-warning btn-sm edit-btn" data-bs-toggle="modal"
-                                    data-bs-target="#editModal" data-id="{{ $maping->id }}"
-                                    data-guru_id="{{ $maping->guru_id }}"
-                                    data-data_ujian_id="{{ $maping->data_ujian_id }}"
-                                    data-mata_pelajaran="{{ $maping->mata_pelajaran_id }}">
-                                    Edit
-                                </button>
-
-                                <form action="{{ route('admin.maping.destroy', $maping->id) }}" method="POST"
-                                    class="d-inline">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-danger btn-sm"
-                                        onclick="return confirm('Apakah Anda yakin ingin menghapus data ini?')">
-                                        Hapus
-                                    </button>
-                                </form>
-                            </td>
+                            <th>No</th>
+                            <th>Nama Guru</th>
+                            <th>Data Ujian</th>
+                            <th>Tahun Pelajaran</th> <!-- Tambahan -->
+                            <th>Semester</th> <!-- Tambahan -->
+                            <th>Mata Pelajaran & Kelas</th>
+                            <th>Jumlah Bank Soal</th>
+                            <th>Aksi</th>
                         </tr>
+                    </thead>
+                    <tbody>
+                        @php
+                            $groupedMapings = $mapings->groupBy('guru_id');
+                            $no = 1;
+                        @endphp
 
-                        @php $first = false; @endphp
-                    @endforeach
-                @endforeach
-            </tbody>
-        </table>
-    </div>
+                        @foreach ($groupedMapings as $guru_id => $mapingGroup)
+                            @php
+                                $rowspan = count($mapingGroup);
+                                $first = true;
+                            @endphp
+
+                            @foreach ($mapingGroup as $maping)
+                                <tr>
+                                    @if ($first)
+                                        <td rowspan="{{ $rowspan }}" class="text-start align-top">{{ $no++ }}</td>
+                                    @endif
+
+                                    @if ($first)
+                                        <td rowspan="{{ $rowspan }}" class="text-start align-top">{{ $maping->guru->Nama }}</td>
+                                    @endif
+
+                                    <td class="text-start align-top">{{ $maping->dataUjian->nama_ujian }}</td>
+                                    <td>{{ $maping->dataUjian->tahunPelajaran->nama_tahun ?? '-' }}</td>
+                                    <td>{{ $maping->dataUjian->tahunPelajaran->semester ?? '-' }}</td>
+
+                                    <td class="text-start align-top">
+                                        @php
+                                            $mataPelajaran = json_decode($maping->mata_pelajaran_id, true);
+                                        @endphp
+                                        @if (!empty($mataPelajaran) && is_array($mataPelajaran))
+                                            @foreach ($mataPelajaran as $mapel)
+                                                @php
+                                                    $mapelNama = \App\Models\MataPelajaran::find($mapel['mata_pelajaran_id']);
+                                                    $kelasNama = \App\Models\Kelas::whereIn('id', $mapel['kelas_id'])
+                                                        ->pluck('nama_kelas')
+                                                        ->toArray();
+                                                @endphp
+                                                <strong>{{ $mapelNama->nama_mapel ?? 'Tidak Ditemukan' }}</strong>:
+                                                {{ implode(', ', $kelasNama) }} <br>
+                                            @endforeach
+                                        @else
+                                            <span class="text-muted">Belum ada data</span>
+                                        @endif
+                                    </td>
+
+                                    <td class="text-center align-middle">
+                                        @php
+                                            // Hitung jumlah mata pelajaran spesifik di baris ini
+                                            $jumlahMapelBaris = count($mataPelajaran ?? []);
+                                        @endphp
+                                        {{ $jumlahMapelBaris }}
+                                    </td>
+
+                                    <td>
+                                        <div class="dropdown">
+                                            <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="icon-base ti tabler-dots-vertical"></i>
+                                            </button>
+                                            <div class="dropdown-menu">
+                                                <!-- Tombol Edit (Trigger Modal) -->
+                                                <a href="javascript:void(0);"
+                                                   class="dropdown-item edit-btn"
+                                                   data-bs-toggle="modal"
+                                                   data-bs-target="#editModal"
+                                                   data-id="{{ $maping->id }}"
+                                                   data-guru_id="{{ $maping->guru_id }}"
+                                                   data-data_ujian_id="{{ $maping->data_ujian_id }}"
+                                                   data-mata_pelajaran="{{ $maping->mata_pelajaran_id }}">
+                                                    <i class="icon-base ti tabler-pencil me-1"></i> Edit
+                                                </a>
+
+                                                <!-- Tombol Delete (Form dalam dropdown) -->
+                                                <form action="{{ route('admin.maping.destroy', $maping->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data ini?')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="dropdown-item text-danger">
+                                                        <i class="icon-base ti tabler-trash me-1"></i> Hapus
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                </tr>
+
+                                @php $first = false; @endphp
+                            @endforeach
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer">
+
+            </div>
+        </div>
+
 
     {{-- Modal Tambah Data --}}
     <div class="modal fade" id="addModal" tabindex="-1">

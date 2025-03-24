@@ -12,6 +12,7 @@ use App\Http\Controllers\AdminKelasController;
 use App\Http\Controllers\GuruAuthController;
 use App\Http\Controllers\GuruDashboardController;
 use App\Http\Controllers\GuruBankSoalController;
+use App\Http\Controllers\AdminDashboardController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -25,9 +26,7 @@ Route::prefix('admin')->group(function () {
     Route::post('/register', [AdminAuthController::class, 'register']);
 
     Route::middleware('admin.auth')->group(function () {
-        Route::get('/dashboard', function () {
-            return view('admin.dashboard');
-        })->name('admin.dashboard');
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
 
         Route::get('/guru', [AdminGuruController::class, 'index'])->name('admin.guru.index');
         Route::post('/guru/import', [AdminGuruController::class, 'import'])->name('admin.guru.import');

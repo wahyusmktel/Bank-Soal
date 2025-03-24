@@ -27,11 +27,11 @@ class AdminDataUjianController extends Controller
             // Paginasi (10 data per halaman)
             $dataUjians = $dataUjians->paginate(10);
 
-            // Ambil daftar tahun pelajaran untuk dropdown di modal
-            $tahunPelajarans = TahunPelajaran::orderBy('nama_tahun', 'desc')->get();
+            // Ambil tahun pelajaran yang sedang aktif
+            $tahunPelajaranAktif = TahunPelajaran::where('status', true)->first();
 
             // Kirim data ke view
-            return view('admin.DataUjian.index', compact('dataUjians', 'search', 'tahunPelajarans'));
+            return view('admin.DataUjian.index', compact('dataUjians', 'search', 'tahunPelajaranAktif'));
         } catch (\Exception $e) {
             // Log error jika terjadi masalah
             Log::error('Error saat mengambil data ujian: ' . $e->getMessage());

@@ -40,28 +40,50 @@
             </ul>
         </li>
 
-        <!-- Mata Pelajaran -->
-        <li class="menu-item {{ request()->is('admin/mata-pelajaran*') ? 'active open' : '' }}">
-            <a href="{{ route('admin.mata-pelajaran.index') }}" class="menu-link">
-                <i class="menu-icon icon-base ti tabler-book"></i>
-                <div>Mata Pelajaran</div>
+        <!-- Set Ujian -->
+        <li class="menu-item {{ request()->is('admin/tahun-pelajaran*') || request()->is('admin/data-ujian*') ? 'active open' : '' }}">
+            <a href="javascript:void(0)" class="menu-link menu-toggle">
+                <i class="menu-icon icon-base ti tabler-settings"></i>
+                <div>Set Ujian</div>
             </a>
+            <ul class="menu-sub">
+                <!-- Submenu: Tahun Pelajaran -->
+                <li class="menu-item {{ request()->routeIs('admin.tahun-pelajaran.index') ? 'active' : '' }}">
+                    <a href="{{ route('admin.tahun-pelajaran.index') }}" class="menu-link">
+                        <div>Tahun Pelajaran</div>
+                    </a>
+                </li>
+
+                <!-- Submenu: Data Ujian -->
+                <li class="menu-item {{ request()->routeIs('admin.data-ujian.index') ? 'active' : '' }}">
+                    <a href="{{ route('admin.data-ujian.index') }}" class="menu-link">
+                        <div>Data Ujian</div>
+                    </a>
+                </li>
+            </ul>
         </li>
 
-        <!-- Tahun Pelajaran -->
-        <li class="menu-item {{ request()->is('admin/tahun-pelajaran*') ? 'active open' : '' }}">
-            <a href="{{ route('admin.tahun-pelajaran.index') }}" class="menu-link">
-                <i class="menu-icon icon-base ti tabler-calendar"></i>
-                <div>Tahun Pelajaran</div>
+        <!-- Data Master -->
+        <li class="menu-item {{ request()->is('admin/kelas*') || request()->is('admin/mata-pelajaran*') ? 'active open' : '' }}">
+            <a href="javascript:void(0)" class="menu-link menu-toggle">
+                <i class="menu-icon icon-base ti tabler-database"></i>
+                <div>Data Master</div>
             </a>
-        </li>
+            <ul class="menu-sub">
+                <!-- Submenu: Kelas -->
+                <li class="menu-item {{ request()->routeIs('admin.kelas.index') ? 'active' : '' }}">
+                    <a href="{{ route('admin.kelas.index') }}" class="menu-link">
+                        <div>Kelas</div>
+                    </a>
+                </li>
 
-        <!-- Data Ujian -->
-        <li class="menu-item {{ request()->is('admin/data-ujian*') ? 'active open' : '' }}">
-            <a href="{{ route('admin.data-ujian.index') }}" class="menu-link">
-                <i class="menu-icon icon-base ti tabler-file-text"></i>
-                <div>Data Ujian</div>
-            </a>
+                <!-- Submenu: Mata Pelajaran -->
+                <li class="menu-item {{ request()->routeIs('admin.mata-pelajaran.index') ? 'active' : '' }}">
+                    <a href="{{ route('admin.mata-pelajaran.index') }}" class="menu-link">
+                        <div>Mata Pelajaran</div>
+                    </a>
+                </li>
+            </ul>
         </li>
 
         <!-- Maping Mapel -->
@@ -69,14 +91,6 @@
             <a href="{{ route('admin.maping.index') }}" class="menu-link">
                 <i class="menu-icon icon-base ti tabler-map"></i>
                 <div>Maping Mapel</div>
-            </a>
-        </li>
-
-        <!-- Kelas -->
-        <li class="menu-item {{ request()->is('admin/kelas*') ? 'active open' : '' }}">
-            <a href="{{ route('admin.kelas.index') }}" class="menu-link">
-                <i class="menu-icon icon-base ti tabler-school"></i>
-                <div>Kelas</div>
             </a>
         </li>
 

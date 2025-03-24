@@ -90,14 +90,9 @@
                     <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label">Tahun Pelajaran</label>
-                            <select class="form-control" name="tahun_pelajaran_id" required>
-                                <option value="">-- Pilih Tahun Pelajaran --</option>
-                                @foreach ($tahunPelajarans as $tahun)
-                                    <option value="{{ $tahun->id }}">{{ $tahun->nama_tahun }}
-                                        ({{ $tahun->semester == 1 ? 'Ganjil' : 'Genap' }})
-                                    </option>
-                                @endforeach
-                            </select>
+                            <input type="text" class="form-control" value="{{ $tahunPelajaranAktif ? $tahunPelajaranAktif->nama_tahun . ' (' . ($tahunPelajaranAktif->semester == 1 ? 'Ganjil' : 'Genap') . ')' : '-' }}" readonly>
+                            <input type="hidden" name="tahun_pelajaran_id" value="{{ $tahunPelajaranAktif->id ?? '' }}">
+                            <small class="text-muted">Tahun pelajaran yang ditampilkan adalah tahun pelajaran yang sedang aktif saat ini.</small>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Nama Ujian</label>
