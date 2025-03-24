@@ -108,57 +108,123 @@
         <!-- Source Visit -->
         <div class="col-xxl-4 col-md-6 col-12">
             <div class="card h-100">
-              <div class="card-header d-flex justify-content-between">
-                <div class="card-title mb-0">
-                    <h5 class="mb-1">Guru Belum Upload</h5>
-                    <p class="card-subtitle">{{ count($guruBelumUpload) }} Data</p>
+                <div class="card-header d-flex justify-content-between">
+                    <div class="card-title mb-0">
+                        <h5 class="mb-1">Guru Belum Upload</h5>
+                        <p class="card-subtitle">{{ count($guruBelumUpload) }} Data</p>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-text-secondary rounded-pill text-body-secondary border-0 p-2 me-n1"
+                            type="button" id="sourceVisits" data-bs-toggle="dropdown" aria-haspopup="true"
+                            aria-expanded="false">
+                            <i class="icon-base ti tabler-dots-vertical icon-md text-body-secondary"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end" aria-labelledby="sourceVisits">
+                            <a class="dropdown-item" href="javascript:void(0);">Refresh</a>
+                            <a class="dropdown-item" href="javascript:void(0);">Download</a>
+                            <a class="dropdown-item" href="javascript:void(0);">View All</a>
+                        </div>
+                    </div>
                 </div>
-                <div class="dropdown">
-                  <button
-                    class="btn btn-text-secondary rounded-pill text-body-secondary border-0 p-2 me-n1"
-                    type="button"
-                    id="sourceVisits"
-                    data-bs-toggle="dropdown"
-                    aria-haspopup="true"
-                    aria-expanded="false">
-                    <i class="icon-base ti tabler-dots-vertical icon-md text-body-secondary"></i>
-                  </button>
-                  <div class="dropdown-menu dropdown-menu-end" aria-labelledby="sourceVisits">
-                    <a class="dropdown-item" href="javascript:void(0);">Refresh</a>
-                    <a class="dropdown-item" href="javascript:void(0);">Download</a>
-                    <a class="dropdown-item" href="javascript:void(0);">View All</a>
-                  </div>
-                </div>
-              </div>
-              <div class="card-body">
-                <ul class="list-unstyled mb-0">
-                    @forelse ($guruBelumUpload as $data)
-                        <li class="mb-4">
-                            <div class="d-flex align-items-center">
-                                <div class="badge bg-label-secondary text-body p-2 me-4 rounded">
-                                    <i class="icon-base ti tabler-alert-triangle icon-md"></i>
-                                </div>
-                                <div class="d-flex justify-content-between w-100 flex-wrap gap-2">
-                                    <div class="me-2">
-                                        <h6 class="mb-0">{{ $data['nama_guru'] }}</h6>
-                                        <small class="text-body">{{ $data['mapel'] }} - {{ $data['kelas'] }}</small>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        @forelse ($guruBelumUpload as $data)
+                            <li class="mb-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="badge bg-label-secondary text-body p-2 me-4 rounded">
+                                        <i class="icon-base ti tabler-alert-triangle icon-md"></i>
                                     </div>
-                                    <div class="d-flex align-items-center">
-                                        <div class="ms-4 badge bg-label-danger">Belum Upload</div>
+                                    <div class="d-flex justify-content-between w-100 flex-wrap gap-2">
+                                        <div class="me-2">
+                                            <h6 class="mb-0">{{ $data['nama_guru'] }}</h6>
+                                            <small class="text-body">{{ $data['mapel'] }} - {{ $data['kelas'] }}</small>
+                                        </div>
+                                        <div class="d-flex align-items-center">
+                                            <div class="ms-4 badge bg-label-danger">Belum Upload</div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </li>
-                    @empty
-                        <li>
-                            <p class="text-center text-muted">Semua guru telah mengunggah soal 🎉</p>
-                        </li>
-                    @endforelse
-                </ul>
-              </div>
+                            </li>
+                        @empty
+                            <li>
+                                <p class="text-center text-muted">Semua guru telah mengunggah soal 🎉</p>
+                            </li>
+                        @endforelse
+                    </ul>
+                </div>
             </div>
-          </div>
-          <!--/ Source Visit -->
+        </div>
+        <!--/ Source Visit -->
+        <!-- Timeline Upload Soal -->
+        <div class="col-xl-6">
+            <div class="card h-100">
+                <h5 class="card-header">Upload Soal Terbaru</h5>
+                <div class="card-body">
+                    <ul class="timeline mb-0">
+                        @forelse($recentUploads as $upload)
+                            @php
+                                $decodedRaw = json_decode($upload->getRawOriginal('mata_pelajaran_id'), true);
+                                $decoded = is_string($decodedRaw) ? json_decode($decodedRaw, true) : $decodedRaw;
+
+                                $mapelNama = isset($decoded['mata_pelajaran_id'])
+                                    ? $mapels[$decoded['mata_pelajaran_id']] ?? '-'
+                                    : '-';
+                                $kelasNama =
+                                    isset($decoded['kelas_id']) && is_array($decoded['kelas_id'])
+                                        ? collect($decoded['kelas_id'])
+                                            ->map(fn($k) => $kelas[$k] ?? 'Unknown')
+                                            ->implode(', ')
+                                        : '-';
+                            @endphp
+                            <li class="timeline-item timeline-item-transparent">
+                                <span class="timeline-point timeline-point-success"></span>
+                                <div class="timeline-event">
+                                    <div class="timeline-header mb-2">
+                                        <h6 class="mb-0">{{ $upload->guru->Nama ?? 'Guru Tidak Ditemukan' }}</h6>
+                                        <small
+                                            class="text-body-secondary">{{ $upload->created_at->diffForHumans() }}</small>
+                                    </div>
+                                    <p class="mb-1">Mata Pelajaran: <strong>{{ $mapelNama }}</strong></p>
+                                    <p class="mb-1">Kelas: <strong>{{ $kelasNama }}</strong></p>
+                                    @php
+                                        $fullName = basename($upload->file_soal); // Misal: Sumatif Tengah Semester Genap_2025/2026_Semester_1_Matematika_XI RPL 1_3c329932.zip
+                                        $parts = explode('_', $fullName);
+
+                                        // Ambil elemen terakhir untuk UUID dan hilangkan
+                                        array_pop($parts);
+
+                                        // Ambil elemen terakhir lagi untuk nama kelas
+                                        $kelasName = array_pop($parts);
+                                        $mapelName = array_pop($parts);
+
+                                        $shortFileName = $mapelName . '_' . $kelasName . '.zip';
+                                    @endphp
+
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="badge bg-lighter rounded d-flex align-items-center px-2 py-1">
+                                            <i class="icon-base ti tabler-file-zip text-warning"></i>
+                                            <span class="h6 mb-0 text-body">{{ $shortFileName }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="badge bg-label-success">Sudah Upload</div>
+                                </div>
+                            </li>
+                        @empty
+                            <li class="timeline-item timeline-item-transparent">
+                                <span class="timeline-point timeline-point-secondary"></span>
+                                <div class="timeline-event">
+                                    <div class="timeline-header mb-3">
+                                        <h6 class="mb-0">Belum ada upload soal</h6>
+                                    </div>
+                                </div>
+                            </li>
+                        @endforelse
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <!-- /Timeline Upload Soal -->
+
     </div>
 
 @endsection

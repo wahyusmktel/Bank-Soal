@@ -120,6 +120,13 @@ class AdminDashboardController extends Controller
                 }
             });
 
+        // Ambil 5 guru terakhir yang upload bank soal
+        $recentUploads = BankSoal::with('guru')->latest()->take(5)->get();
+
+        // Ambil semua data mapel dan kelas untuk referensi nama
+        $mapels = MataPelajaran::pluck('nama_mapel', 'id')->toArray();
+        $kelas = Kelas::pluck('nama_kelas', 'id')->toArray();
+
         // Tahun Pelajaran Aktif
         $tahunAktif = TahunPelajaran::where('status', true)->first();
 
@@ -134,7 +141,10 @@ class AdminDashboardController extends Controller
             'jumlahBelumUpload',
             'tahunAktif',
             'ujianAktif',
-            'guruBelumUpload'
+            'guruBelumUpload',
+            'recentUploads',
+            'mapels',
+            'kelas'
         ));
     }
 }
